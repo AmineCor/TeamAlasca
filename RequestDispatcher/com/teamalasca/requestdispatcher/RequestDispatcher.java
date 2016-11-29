@@ -2,11 +2,13 @@ package com.teamalasca.requestdispatcher;
 
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.StringTokenizer;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 import fr.upmc.components.AbstractComponent;
 import fr.upmc.components.exceptions.ComponentShutdownException;
+import fr.upmc.components.ports.AbstractPort;
 import fr.upmc.datacenter.software.connectors.RequestSubmissionConnector;
 import fr.upmc.datacenter.software.interfaces.RequestI;
 import fr.upmc.datacenter.software.interfaces.RequestNotificationHandlerI;
@@ -18,85 +20,155 @@ import fr.upmc.datacenter.software.ports.RequestNotificationOutboundPort;
 import fr.upmc.datacenter.software.ports.RequestSubmissionInboundPort;
 import fr.upmc.datacenter.software.ports.RequestSubmissionOutboundPort;
 
-public class RequestDispatcher extends AbstractComponent 
-	implements RequestSubmissionHandlerI , RequestNotificationHandlerI{
-	
-	ArrayList<String> virtualMachineMap;
-	String outbound;
-    RequestSubmissionOutboundPort rsb;
-    RequestNotificationOutboundPort rnob;
-    RequestNotificationInboundPort rnib;
-	
-	public RequestDispatcher(String requestSubmissionOutbounPortUri,String requestSubmissionInboundPortUri ,
-    						String AppUri,String requestNotificationInboundPortUri,String outbound1)
-    throws Exception {
-		
-    	this.virtualMachineMap =new ArrayList<>();
-    	outbound = requestSubmissionOutbounPortUri;
-    	
-    	this.addOfferedInterface(RequestSubmissionI.class);
-    	this.addRequiredInterface(RequestSubmissionI.class);
-    	
-    	RequestSubmissionInboundPort rst = new RequestSubmissionInboundPort(requestSubmissionInboundPortUri, this);
-    	this.addPort(rst);
-    	rst.publishPort();
-    	
-    	rsb = new RequestSubmissionOutboundPort(outbound, this);
-    	this.addPort(rsb);
-    	rsb.publishPort();
-    	
-    	this.addOfferedInterface(RequestNotificationI.class);
-		this.rnib = new RequestNotificationInboundPort(requestNotificationInboundPortUri, this) ;
-		this.addPort(this.rnib) ;
-		this.rnib.publishPort() ;
-		
+/**
+ * A request dispatcher is a component receiving request submissions from
+ * a given application, and dispatching these requests to the different VM
+ * allocated for this application
+ */
+public final class RequestDispatcher extends AbstractComponent 
+implements RequestSubmissionHandlerI , RequestNotificationHandlerI{
+
+	/** URIs of the virtual machines allocated to this request dispatcher */
+	private final List<String> virtualMachinesPortURIs;
+
+	/** Outbound ports of the request dispatcher connected with the virtual machines allocated for execute the application.
+	 * A linked list is used in order to deal with our dispatching policy */
+	private final LinkedList<RequestSubmissionOutboundPort> rsops;
+
+	/** Inbound port of the request dispatcher receiving notifications from the virtual machines */
+	private final RequestNotificationInboundPort rnip;
+
+	/** Inbound port of the request dispatcher connected with the application
+	 */
+	private final RequestSubmissionInboundPort rsip;
+
+	/** Outbound port  of the request dispatcher sending notifications to the application */
+	private final RequestNotificationOutboundPort rnop;
+
+	public RequestDispatcher(final String requestSubmissionInboundPortURI ,
+			final String requestNotificationInboundPortURI,final String requestNotificationOutboundPortURI)
+					throws Exception {
+
+
+		this.virtualMachinesPortURIs = new ArrayList<>(); // for now, no vm is allocated to this request dispatcher
+
+		this.rsops =new LinkedList<>(); // and no outbound port is initialized
+		this.addRequiredInterface(RequestSubmissionI.class);
+
+		// whenever the other ports are initialized
+
+		this.rsip = new RequestSubmissionInboundPort(requestSubmissionInboundPortURI, this);
+		this.addPort(rsip);
+		this.rsip.publishPort();
+		this.addOfferedInterface(RequestSubmissionI.class);
+
+		this.rnop = new RequestNotificationOutboundPort(requestNotificationOutboundPortURI, this) ;
+		this.addPort(this.rnop) ;
+		this.rnop.publishPort() ;
+		this.addRequiredInterface(RequestNotificationI.class);
+
+		this.rnip = new RequestNotificationInboundPort(requestNotificationInboundPortURI, this) ;
+		this.addPort(this.rnip) ;
+		this.rnip.publishPort() ;
 		this.addOfferedInterface(RequestNotificationI.class);
-		this.rnob = new RequestNotificationOutboundPort(outbound1, this) ;
-		this.addPort(this.rnob) ;
-		this.rnob.publishPort() ;
-    	
-    }
-	
-	public void associate(String UriCo) throws Exception{
-		
-		if(!this.virtualMachineMap.contains(UriCo)){
-			this.virtualMachineMap.add(UriCo);
+
+
+	}
+
+	public void associateVirtualMachine(final String virtualMachinePortURI) throws Exception{
+
+		if(this.virtualMachinesPortURIs.contains(virtualMachinePortURI)){
+			return;
 		}
+
+		// adding the new virtual machine to our internal vm list
+		this.virtualMachinesPortURIs.add(virtualMachinePortURI);
+
+		// creating a new outbound port for the VM
+
+		final String URI = AbstractPort.generatePortURI();
+
+		RequestSubmissionOutboundPort rsop = new RequestSubmissionOutboundPort(URI,this);
+		this.addPort(rsop);
+		rsop.publishPort();
+
+		// creating the connection from the new port to the VM
+		rsop.doConnection(virtualMachinePortURI, RequestSubmissionConnector.class.getCanonicalName());
+
+		// adding the port to our internal outbound port list
+		this.rsops.addFirst(rsop);
+	}
+
+	public void dissociateVirtualMachine(final String virtualMachinePortURI) throws Exception{
+
+		if(!this.virtualMachinesPortURIs.contains(virtualMachinePortURI)){
+			return;
+		}
+
+		synchronized (rsops) {
+
+			for(Iterator<RequestSubmissionOutboundPort> it = rsops.iterator();it.hasNext();){
+
+				RequestSubmissionOutboundPort rsop = it.next();
+				if(rsop.getServerPortURI().equals(virtualMachinePortURI)){
+					it.remove();
+					rsop.unpublishPort();
+					rsop.doDisconnection();
+				}
+			}
+
+		}
+
+		this.virtualMachinesPortURIs.remove(virtualMachinePortURI);
 	}
 
 	@Override
-	public void acceptRequestSubmission(RequestI r) throws Exception {
-		logMessage("RequestRepartitor : New Request "+r.getRequestURI());
-		String port=virtualMachineMap.get(0);
-		
-		rsb.doConnection(port, RequestSubmissionConnector.class.getCanonicalName());
-		rsb.submitRequest(r);
-		
-		virtualMachineMap.remove(port);
-		virtualMachineMap.add(port);
-    	rsb.doDisconnection();
+	public void acceptRequestSubmission(final RequestI r) throws Exception{
+
+		if(rsops.isEmpty())
+			throw new Exception("request '"+r.getRequestURI()+"' cant be handled because no vm is connected to the request dispatcher");
+
+		RequestSubmissionOutboundPort rsop = rsops.removeFirst(); 
+
+		if(!rsop.connected())
+			throw new Exception("port '"+rsop.getPortURI()+"' of the request dispatcher is disconnected, that should not happen");
+
+		rsop.submitRequest(r);
+		logMessage("request '"+r.getRequestURI()+"' submitted to request dispatcher");
+
+		rsops.addLast(rsop); // the port is pushed at the last position of the list, performing a good ports turnover
 	}
 
 	@Override
 	public void acceptRequestSubmissionAndNotify(RequestI r) throws Exception {
-		
-		logMessage("RequestDispatcher : New Request "+r.getRequestURI());
 
-		String port=virtualMachineMap.get(0);
-		
-		rsb.doConnection(port, RequestSubmissionConnector.class.getCanonicalName());
-		rsb.submitRequestAndNotify(r);
-		
-		virtualMachineMap.remove(port);
-		virtualMachineMap.add(port);
-		rsb.doDisconnection();
+		if(rsops.isEmpty())
+			throw new Exception("request '"+r.getRequestURI()+"' cant be handled because no vm is connected to the request dispatcher");
+
+		RequestSubmissionOutboundPort rsop = rsops.removeFirst(); 
+
+		if(!rsop.connected())
+			throw new Exception("port '"+rsop.getPortURI()+"' of the request dispatcher is disconnected, that should not happen");
+
+		rsop.submitRequestAndNotify(r);
+		logMessage("request '"+r.getRequestURI()+"' submitted to request dispatcher");
+
+		rsops.addLast(rsop); // the port is pushed at the last position of the list, performing a good ports turnover
 	}
-	
+
+
 	@Override
 	public void shutdown() throws ComponentShutdownException
 	{
 		try{
-		
+
+			for(RequestSubmissionOutboundPort rsop:rsops){
+				rsop.unpublishPort();
+				rsop.doDisconnection();
+			}
+
+			rnop.unpublishPort();
+			rnop.doDisconnection();
 		}
 		catch(Exception e)
 		{
@@ -107,10 +179,9 @@ public class RequestDispatcher extends AbstractComponent
 	@Override
 	public void acceptRequestTerminationNotification(RequestI r)
 			throws Exception {
-		
-		rnob.notifyRequestTermination(r);
-		logMessage("RequestDispatcher : Request_termination "+r.getRequestURI());
-		
+
+		rnop.notifyRequestTermination(r);
+
 	}
 }
 
