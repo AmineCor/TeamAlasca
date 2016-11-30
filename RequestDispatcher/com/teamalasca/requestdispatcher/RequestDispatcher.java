@@ -23,7 +23,7 @@ public class RequestDispatcher extends AbstractComponent
 	
 	ArrayList<String> virtualMachineMap;
 	String outbound;
-    RequestSubmissionOutboundPort rsb;
+     protected RequestSubmissionOutboundPort rsb;
     RequestNotificationOutboundPort rnob;
     RequestNotificationInboundPort rnib;
 	

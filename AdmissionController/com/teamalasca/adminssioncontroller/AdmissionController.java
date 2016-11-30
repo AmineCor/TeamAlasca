@@ -271,5 +271,7 @@ implements AdmissionSubmissionHandlerI,ComputerStateDataConsumerI {
 		.doConnection
 		(a.getAppUri()+"_rg_rnibp",
 				RequestNotificationConnector.class.getCanonicalName());
+		
+		
 	}
 }
