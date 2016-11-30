@@ -274,7 +274,11 @@ extends		AbstractCVM
 				RequestDispatcherRequestNotificationInboundPortURI,
 				RequestNotificationConnector.class.getCanonicalName()) ;
 
-		this.addDeployedComponent(requestDispatcher);	
+		this.addDeployedComponent(requestDispatcher);
+
+		// Toggle on tracing and logging in the request dispatcher to
+		// follow the submission and end of execution notification of
+		// individual requests.
 		requestDispatcher.toggleTracing() ;
 		requestDispatcher.toggleLogging() ;
 
@@ -358,14 +362,12 @@ extends		AbstractCVM
 	public void			shutdown() throws Exception
 	{
 
-		requestDispatcher.shutdown();
-		requestGenerator.shutdown();
-
 		// disconnect all ports explicitly connected in the deploy phase.
 		this.csPort.doDisconnection() ;
 		this.avmmop1.doDisconnection() ;
 		this.rgmop.doDisconnection() ;
 
+		// the super method will disconnect all the deployed components ports
 		super.shutdown() ;
 	}
 

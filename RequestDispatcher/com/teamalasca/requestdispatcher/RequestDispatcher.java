@@ -163,12 +163,12 @@ implements RequestSubmissionHandlerI , RequestNotificationHandlerI{
 		try{
 
 			for(RequestSubmissionOutboundPort rsop:rsops){
-				rsop.unpublishPort();
 				rsop.doDisconnection();
+				rsop.unpublishPort();
 			}
 
-			rnop.unpublishPort();
 			rnop.doDisconnection();
+			rnop.unpublishPort();
 		}
 		catch(Exception e)
 		{
