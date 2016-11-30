@@ -19,7 +19,7 @@ import fr.upmc.datacenterclient.requestgenerator.RequestGenerator;
 
 /**
  * 
- * @author Corchi-George
+ * @author Corchi - George
  *
  */
 public class RGApplication  extends AbstractComponent implements AdmissionNotificationHandlerI, RequestNotificationHandlerI
