@@ -75,14 +75,14 @@ implements RequestSubmissionHandlerI , RequestNotificationHandlerI{
 
 	}
 
-	public void associateVirtualMachine(final String virtualMachinePortURI) throws Exception{
+	public void associateVirtualMachine(final String virtualMachineRequestSubmissionInboundPortURI) throws Exception{
 
-		if(this.virtualMachinesPortURIs.contains(virtualMachinePortURI)){
+		if(this.virtualMachinesPortURIs.contains(virtualMachineRequestSubmissionInboundPortURI)){
 			return;
 		}
 
 		// adding the new virtual machine to our internal vm list
-		this.virtualMachinesPortURIs.add(virtualMachinePortURI);
+		this.virtualMachinesPortURIs.add(virtualMachineRequestSubmissionInboundPortURI);
 
 		// creating a new outbound port for the VM
 
@@ -93,15 +93,17 @@ implements RequestSubmissionHandlerI , RequestNotificationHandlerI{
 		rsop.publishPort();
 
 		// creating the connection from the new port to the VM
-		rsop.doConnection(virtualMachinePortURI, RequestSubmissionConnector.class.getCanonicalName());
+		rsop.doConnection(virtualMachineRequestSubmissionInboundPortURI, RequestSubmissionConnector.class.getCanonicalName());
 
 		// adding the port to our internal outbound port list
 		this.rsops.addFirst(rsop);
+		
+		logMessage("a new virtual machine (submission input port:'"+ virtualMachineRequestSubmissionInboundPortURI + "') has been associated to the request dispatcher");
 	}
 
-	public void dissociateVirtualMachine(final String virtualMachinePortURI) throws Exception{
+	public void dissociateVirtualMachine(final String virtualMachineRequestSubmissionInboundPortURI) throws Exception{
 
-		if(!this.virtualMachinesPortURIs.contains(virtualMachinePortURI)){
+		if(!this.virtualMachinesPortURIs.contains(virtualMachineRequestSubmissionInboundPortURI)){
 			return;
 		}
 
@@ -110,7 +112,7 @@ implements RequestSubmissionHandlerI , RequestNotificationHandlerI{
 			for(Iterator<RequestSubmissionOutboundPort> it = rsops.iterator();it.hasNext();){
 
 				RequestSubmissionOutboundPort rsop = it.next();
-				if(rsop.getServerPortURI().equals(virtualMachinePortURI)){
+				if(rsop.getServerPortURI().equals(virtualMachineRequestSubmissionInboundPortURI)){
 					it.remove();
 					rsop.unpublishPort();
 					rsop.doDisconnection();
@@ -119,7 +121,9 @@ implements RequestSubmissionHandlerI , RequestNotificationHandlerI{
 
 		}
 
-		this.virtualMachinesPortURIs.remove(virtualMachinePortURI);
+		this.virtualMachinesPortURIs.remove(virtualMachineRequestSubmissionInboundPortURI);
+		
+		logMessage("virtual machine (submission input port:'"+ virtualMachineRequestSubmissionInboundPortURI + "') has been dissociated to the request dispatcher");
 	}
 
 	@Override

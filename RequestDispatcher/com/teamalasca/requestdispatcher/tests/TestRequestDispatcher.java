@@ -248,6 +248,9 @@ extends		AbstractCVM
 		// --------------------------------------------------------------------
 		requestDispatcher = new RequestDispatcher(RequestDispatcherRequestSubmissionInboundPortURI, RequestDispatcherRequestNotificationInboundPortURI, RequestDispatcherRequestNotificationOutboundPortURI);
 
+		requestDispatcher.toggleTracing() ;
+		requestDispatcher.toggleLogging() ;
+
 		// Associating 3 VMs to the request dispatcher
 		requestDispatcher.associateVirtualMachine(VirtualMachineRequestSubmissionInboundPortURI1);
 		requestDispatcher.associateVirtualMachine(VirtualMachineRequestSubmissionInboundPortURI2);
@@ -380,8 +383,12 @@ extends		AbstractCVM
 	{
 		// start the request generation in the request generator.
 		this.rgmop.startGeneration() ;
-		// wait 20 seconds
-		Thread.sleep(20000L) ;
+		// wait 10 seconds
+		Thread.sleep(10000L) ;
+		// disconnecting a virtual machine from the request dispatcher
+		this.requestDispatcher.dissociateVirtualMachine(VirtualMachineRequestSubmissionInboundPortURI1);
+		// wait 10 seconds
+		Thread.sleep(10000L) ;
 		// then stop the generation.
 		this.rgmop.stopGeneration() ;
 	}
