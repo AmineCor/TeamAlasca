@@ -20,6 +20,7 @@ import fr.upmc.datacenter.software.ports.RequestNotificationOutboundPort;
 import fr.upmc.datacenter.software.ports.RequestSubmissionInboundPort;
 import fr.upmc.datacenter.software.ports.RequestSubmissionOutboundPort;
 
+
 /**
  * A request dispatcher is a component receiving request submissions from
  * a given application, and dispatching these requests to the different VM
