@@ -1,13 +1,13 @@
 package com.teamalasca.application;
 
-import com.teamalasca.adminssioncontroller.Admission;
-import com.teamalasca.adminssioncontroller.ports.AdmissionNotificationInboundPort;
-import com.teamalasca.adminssioncontroller.ports.AdmissionSubmissionOutboundPort;
-import com.teamalasca.admissioncontroller.connectors.AdmissionSubmissionConnector;
-import com.teamalasca.admissioncontroller.interfaces.AdmissionI;
+import com.teamalasca.admissioncontroller.connectors.AdmissionRequestConnector;
+import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestI;
 import com.teamalasca.admissioncontroller.interfaces.AdmissionNotificationHandlerI;
 import com.teamalasca.admissioncontroller.interfaces.AdmissionNotificationI;
-import com.teamalasca.admissioncontroller.interfaces.AdmissionSubmissionI;
+import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestSubmitterI;
+import com.teamalasca.admissioncontroller.ports.AdmissionNotificationInboundPort;
+import com.teamalasca.admissioncontroller.ports.AdmissionRequestOutboundPort;
+import com.teamalasca.admissioncontroller.requests.AdmissionRequest;
 
 import fr.upmc.components.AbstractComponent;
 import fr.upmc.components.cvm.AbstractCVM;
@@ -24,18 +24,17 @@ import fr.upmc.datacenterclient.requestgenerator.RequestGenerator;
  */
 public class RGApplication  extends AbstractComponent implements AdmissionNotificationHandlerI, RequestNotificationHandlerI
 {
-    
+
 	RequestGenerator rg ;
 	String URI;
 	AdmissionNotificationInboundPort anibp;
-	AdmissionSubmissionOutboundPort asobp;
-	
-	
-	
+	AdmissionRequestOutboundPort asop;
+
+
+
 	public RGApplication(String uri,AbstractCVM acvm) throws Exception {
 		super();
-		// TODO Auto-generated constructor stub
-		
+
 		URI = uri;
 		rg =
 				new RequestGenerator(
@@ -52,53 +51,52 @@ public class RGApplication  extends AbstractComponent implements AdmissionNotifi
 		this.anibp = new AdmissionNotificationInboundPort(URI+"_anibp", this) ;
 		this.addPort(this.anibp) ;
 		this.anibp.publishPort() ;
-		
-		this.addRequiredInterface(AdmissionSubmissionI.class);
-		this.asobp = new AdmissionSubmissionOutboundPort(URI+"_asobp", this) ;
-		this.addPort(this.asobp) ;
-		this.asobp.publishPort() ;
-		
-		
-		
+
+		this.addRequiredInterface(AdmissionRequestSubmitterI.class);
+		this.asop = new AdmissionRequestOutboundPort(URI+"_asobp", this) ;
+		this.addPort(this.asop) ;
+		this.asop.publishPort() ;	
+
 	}
 
 	@Override
 	public void acceptRequestTerminationNotification(RequestI r)
 			throws Exception 
-			{
-				rg.acceptRequestTerminationNotification(r);
-			}
+	{
+		rg.acceptRequestTerminationNotification(r);
+	}
 
 	public void	startApp() throws Exception
 	{
-		logMessage("Start Application "+URI);
-		Admission a = new Admission(URI,URI+"_rg_rnip",URI+"_anip");
-		this.asobp.handleAdmissionSubmissionAndNotify(a);
+		logMessage(this.toString()+" starts");
+		AdmissionRequest request = new AdmissionRequest(this.URI, anibp.getPortURI());
+		this.asop.handleAdmissionRequestAndNotify(request);
 	}
 
 	public void doConnectionAdmissionControler(String asibp) throws Exception
 	{
-		this.asobp.doConnection(asibp, AdmissionSubmissionConnector.class.getCanonicalName());
+		this.asop.doConnection(asibp, AdmissionRequestConnector.class.getCanonicalName());
 	}
 
 	@Override
-	public void acceptAdmissionNotification(AdmissionI a) throws Exception {
-		boolean response = a.isAllowed();
-		
+	public void acceptAdmissionNotification(AdmissionRequestI request) throws Exception {
+		boolean response = request.isAccepted();
+
 		if(response){
-			logMessage("Access authorized");
-			String rqURI = a.requestSubmissionInboundPortURIRep();
+			String rqURI = request.getRequestSubmissionInboundPortURI();
 			rg.findPortFromURI(URI+"_rg_rsobp").doConnection(rqURI, RequestSubmissionConnector.class.getCanonicalName());
 			rg.startGeneration();
 		}
-		else{
-			logMessage("Access Denied");
-		}
 	}
 
-	
-		
+	@Override
+	public String toString() {
+		return "application '"+URI+"'";
 	}
 
-	
+
+
+}
+
+
 

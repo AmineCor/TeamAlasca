@@ -1,6 +1,6 @@
-package com.teamalasca.adminssioncontroller.ports;
+package com.teamalasca.admissioncontroller.ports;
 
-import com.teamalasca.admissioncontroller.interfaces.AdmissionI;
+import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestI;
 import com.teamalasca.admissioncontroller.interfaces.AdmissionNotificationHandlerI;
 import com.teamalasca.admissioncontroller.interfaces.AdmissionNotificationI;
 
@@ -20,7 +20,7 @@ public class AdmissionNotificationOutboundPort extends AbstractOutboundPort impl
 	}
 
 	@Override
-	public void acceptAdmissionNotification(AdmissionI a) throws Exception {
+	public void acceptAdmissionNotification(AdmissionRequestI a) throws Exception {
 		((AdmissionNotificationI)this.connector).notifyAdmission(a) ;
 	}
 }

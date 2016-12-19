@@ -1,28 +1,46 @@
-package com.teamalasca.adminssioncontroller.tests;
+package com.teamalasca.admissioncontroller.tests;
+
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.teamalasca.adminssioncontroller.AdmissionController;
+import com.teamalasca.admissioncontroller.AdmissionController;
 import com.teamalasca.application.RGApplication;
+import com.teamalasca.requestdispatcher.RequestDispatcher;
 
 import fr.upmc.components.AbstractComponent;
+import fr.upmc.components.connectors.DataConnector;
 import fr.upmc.components.cvm.AbstractCVM;
+import fr.upmc.datacenter.connectors.ControlledDataConnector;
 import fr.upmc.datacenter.hardware.computers.Computer;
+import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
 import fr.upmc.datacenter.hardware.computers.connectors.ComputerServicesConnector;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerDynamicStateDataOutboundPort;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerServicesOutboundPort;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerStaticStateDataOutboundPort;
 import fr.upmc.datacenter.hardware.processors.Processor;
+import fr.upmc.datacenter.hardware.tests.ComputerMonitor;
+import fr.upmc.datacenter.software.applicationvm.ApplicationVM;
+import fr.upmc.datacenter.software.applicationvm.connectors.ApplicationVMManagementConnector;
 import fr.upmc.datacenter.software.applicationvm.ports.ApplicationVMManagementOutboundPort;
+import fr.upmc.datacenter.software.connectors.RequestNotificationConnector;
+import fr.upmc.datacenter.software.connectors.RequestSubmissionConnector;
 import fr.upmc.datacenter.software.ports.RequestNotificationOutboundPort;
 import fr.upmc.datacenter.software.ports.RequestSubmissionOutboundPort;
+import fr.upmc.datacenterclient.requestgenerator.RequestGenerator;
+import fr.upmc.datacenterclient.requestgenerator.connectors.RequestGeneratorManagementConnector;
 import fr.upmc.datacenterclient.requestgenerator.ports.RequestGeneratorManagementOutboundPort;
+import fr.upmc.datacenterclient.tests.TestRequestGenerator;
 
-public class TestAdmissionControler 
+/**
+ * This class is a consistent components assembly allowing testing the admission controller
+ * component.
+ * Strongly inspired by the class {@link TestRequestGenerator}
+ */
+public class			TestAdmissionController
 extends		AbstractCVM
-
 {
 	// ------------------------------------------------------------------------
 	// Constants and instance variables
@@ -30,28 +48,45 @@ extends		AbstractCVM
 
 	// Predefined URI of the different ports visible at the component assembly
 	// level.
+
 	public static final String	ComputerServicesInboundPortURI = "cs-ibp" ;
 	public static final String	ComputerServicesOutboundPortURI = "cs-obp" ;
 	public static final String	ComputerStaticStateDataInboundPortURI = "css-dip" ;
 	public static final String	ComputerStaticStateDataOutboundPortURI = "css-dop" ;
 	public static final String	ComputerDynamicStateDataInboundPortURI = "cds-dip" ;
 	public static final String	ComputerDynamicStateDataOutboundPortURI = "cds-dop" ;
-	public static final String	ApplicationVMManagementInboundPortURI = "avm-ibp" ;
+
+	// Admission controller ports
+	private static final String AdmissionControllerAdmissionRequestInboundPortURI = "ac-arip";
+	private static final String AdmissionControllerAdmissionNotifiationOutboundPortURI = "ac-anop";
+	private static final String AdmissionControllerComputerServiceOutboundPortURI = "ac-csop";
+	private static final String AdmissionControllerComputerDynamicStateDataInboundPortURI = "ac-cdsdip";
+
+	// Virtual machines ports
+	public static final String	VirtualMachineRequestSubmissionInboundPortURI1 = "vm-rsip1" ;
+	public static final String	VirtualMachineRequestSubmissionInboundPortURI2 = "vm-rsip2" ;
+	public static final String	VirtualMachineRequestSubmissionInboundPortURI3 = "vm-rsip3" ;
+	public static final String VirtualMachineRequestNotificationOutboundPortURI1 = "vm-rnop1" ;
+	public static final String VirtualMachineRequestNotificationOutboundPortURI2="vm-rnop2" ;
+	public static final String VirtualMachineRequestNotificationOutboundPortURI3="vm-rnop3" ;
+
+	// Virtual machines management ports
+	public static final String	ApplicationVMManagementInboundPortURI1 = "avm-ibp" ;
+	public static final String ApplicationVMManagementInboundPortURI2="avm-ibp1";
+	public static final String ApplicationVMManagementInboundPortURI3="avm-ibp2";
 	public static final String	ApplicationVMManagementOutboundPortURI = "avm-obp" ;
-	public static final String	ApplicationVMManagementInboundPortURI_1 = "avm-ibp_1" ;
-	public static final String	ApplicationVMManagementOutboundPortURI_1 = "avm-obp_1" ;
-	public static final String	ApplicationVMManagementInboundPortURI_2 = "avm-ibp_2" ;
-	public static final String	ApplicationVMManagementOutboundPortURI_2 = "avm-obp_2" ;
-	public static final String	RequestSubmissionInboundPortURI_AVM = "rsibp-AVM" ;
-	public static final String	RequestSubmissionInboundPortURI_AVM_1 = "rsibp-AVM_1" ;
-	public static final String	RequestSubmissionInboundPortURI_AVM_2 = "rsibp-AVM_2" ;
-	public static final String	RequestSubmissionInboundPortURI_RR = "rsibp-RR" ;
-	public static final String	RequestSubmissionOutboundPortURI_RG = "rsobp-RG" ;
-	public static final String	RequestSubmissionOutboundPortURI_RR = "rsobp-RR" ;
-	public static final String	RequestNotificationInboundPortURI = "rnibp" ;
-	public static final String	RequestNotificationOutboundPortURI = "rnobp" ;
-	public static final String	RequestGeneratorManagementInboundPortURI = "rgmip" ;
-	public static final String	RequestGeneratorManagementOutboundPortURI = "rgmop" ;
+	public static final String	ApplicationVMManagementOutboundPortURI1 = "avm-obp1";
+	public static final String	ApplicationVMManagementOutboundPortURI2 = "avm-obp2";
+
+
+	/** Admission Controller **/
+	protected AdmissionController admissionController;
+
+	/** Application 1 **/
+	protected RGApplication app1;
+
+	/** Application 2 **/
+	protected RGApplication app2;
 
 	/** Port connected to the computer component to access its services.	*/
 	protected ComputerServicesOutboundPort				csPort ;
@@ -61,34 +96,12 @@ extends		AbstractCVM
 	/** Port connected to the computer component to receive the dynamic
 	 *  state data.															*/
 	protected ComputerDynamicStateDataOutboundPort		cdsPort ;
-	/** Port connected to the AVM component to allocate it cores.			*/
-	protected ApplicationVMManagementOutboundPort		avmPort ;
-	/** Port connected to the AVM component to allocate it cores.			*/
-	protected ApplicationVMManagementOutboundPort		avmPort1 ;
-	protected ApplicationVMManagementOutboundPort		avmPort2 ;
-	/** Port of the request generator component sending requests to the
-	 *  RR component.														*/
-	protected RequestSubmissionOutboundPort				rsobp_rg ;
-	/** Port of the request repartitor component sending requests to the
-	 *  AVM component.														*/
-	protected RequestSubmissionOutboundPort				rsobp_rr ;
-	/** Port of the request repartitor component sending requests to the
-	 *  AVM component.														*/
-	protected RequestSubmissionOutboundPort				rsobp_rr1 ;
-	/** Port of the request generator component used to receive end of
-	 *  execution notifications from the AVM component.						*/
-	protected RequestNotificationOutboundPort			nobp ;
-	/** Port connected to the request generator component to manage its
-	 *  execution (starting and stopping the request generation).			*/
-	protected RequestGeneratorManagementOutboundPort	rgmop ;
 
-	protected RGApplication app1;
-	protected RGApplication app2;
 	// ------------------------------------------------------------------------
 	// Component virtual machine constructors
 	// ------------------------------------------------------------------------
 
-	public				TestAdmissionControler()
+	public				TestAdmissionController()
 			throws Exception
 	{
 		super();
@@ -109,7 +122,7 @@ extends		AbstractCVM
 		// each with 2 cores.
 		// --------------------------------------------------------------------
 		String computerURI = "computer0" ;
-		int numberOfProcessors = 3 ;
+		int numberOfProcessors = 2 ;
 		int numberOfCores = 2 ;
 		Set<Integer> admissibleFrequencies = new HashSet<Integer>() ;
 		admissibleFrequencies.add(1500) ;	// Cores can run at 1,5 GHz
@@ -146,39 +159,52 @@ extends		AbstractCVM
 		// Create the computer monitor component and connect its to ports
 		// with the computer component.
 		// --------------------------------------------------------------------
-		//		ComputerMonitor cm =
-		//				new ComputerMonitor(computerURI,
-		//						true,
-		//						ComputerStaticStateDataOutboundPortURI,
-		//						ComputerDynamicStateDataOutboundPortURI) ;
-		//		this.addDeployedComponent(cm) ;
-		//		this.cssPort =
-		//				(ComputerStaticStateDataOutboundPort)
-		//				cm.findPortFromURI(ComputerStaticStateDataOutboundPortURI) ;
-		//		this.cssPort.doConnection(
-		//				ComputerStaticStateDataInboundPortURI,
-		//				DataConnector.class.getCanonicalName()) ;
-		//
-		//		this.cdsPort =
-		//				(ComputerDynamicStateDataOutboundPort)
-		//				cm.findPortFromURI(ComputerDynamicStateDataOutboundPortURI) ;
-		//		/*this.cdsPort.
-		//		doConnection(
-		//				ComputerDynamicStateDataInboundPortURI,
-		//				ControlledDataConnector.class.getCanonicalName()) ;*/
+		ComputerMonitor cm =
+				new ComputerMonitor(computerURI,
+						true,
+						ComputerStaticStateDataOutboundPortURI,
+						ComputerDynamicStateDataOutboundPortURI) ;
+		this.addDeployedComponent(cm) ;
+		this.cssPort =
+				(ComputerStaticStateDataOutboundPort)
+				cm.findPortFromURI(ComputerStaticStateDataOutboundPortURI) ;
+		this.cssPort.doConnection(
+				ComputerStaticStateDataInboundPortURI,
+				DataConnector.class.getCanonicalName()) ;
+
+		this.cdsPort =
+				(ComputerDynamicStateDataOutboundPort)
+				cm.findPortFromURI(ComputerDynamicStateDataOutboundPortURI) ;
+		this.cdsPort.
+		doConnection(
+				ComputerDynamicStateDataInboundPortURI,
+				ControlledDataConnector.class.getCanonicalName()) ;
+
 		// --------------------------------------------------------------------
-		String ac_uri="ac_uri";
 
-		// création du contrôleur d'admission
+		// --------------------------------------------------------------------
+		// Creating the admission controller component
+		// --------------------------------------------------------------------
 
-		AdmissionController ac = new AdmissionController(this,ac_uri,ComputerServicesOutboundPortURI,ComputerDynamicStateDataInboundPortURI, computerURI);
+		// --------------------------------------------------------------------
 
-		this.addDeployedComponent(ac);
+		admissionController  = new AdmissionController("ad1",
+				AdmissionControllerAdmissionRequestInboundPortURI,
+				AdmissionControllerAdmissionNotifiationOutboundPortURI,
+				AdmissionControllerComputerServiceOutboundPortURI,
+				AdmissionControllerComputerDynamicStateDataInboundPortURI);
+
+		this.addDeployedComponent(admissionController);
+
+		admissionController.doConnectionWithComputer(computerURI, ComputerServicesInboundPortURI,ComputerDynamicStateDataInboundPortURI);
+		admissionController.toggleLogging();
+		admissionController.toggleTracing();
+
+		// -------------- Creating 2 applications ----------- //
 
 		app1 = new RGApplication("app1",this);
-
 		this.addDeployedComponent(app1);
-		app1.doConnectionAdmissionControler(ac_uri+"_asibp");
+		app1.doConnectionAdmissionControler(AdmissionControllerAdmissionRequestInboundPortURI);
 
 		app1.toggleTracing() ;
 		app1.toggleLogging() ;
@@ -186,13 +212,13 @@ extends		AbstractCVM
 		app2 = new RGApplication("app2",this);
 
 		this.addDeployedComponent(app2);
-		app2.doConnectionAdmissionControler(ac_uri+"_asibp");
+		app2.doConnectionAdmissionControler(AdmissionControllerAdmissionRequestInboundPortURI);
 
 		app2.toggleTracing() ;
 		app2.toggleLogging() ;
 
-		ac.toggleTracing() ;
-		ac.toggleLogging() ;
+
+		// --------------------------------------------------------------------
 
 		// complete the deployment at the component virtual machine level.
 		super.deploy();
@@ -205,8 +231,6 @@ extends		AbstractCVM
 	public void			start() throws Exception
 	{
 		super.start() ;
-
-
 	}
 
 	/**
@@ -215,9 +239,15 @@ extends		AbstractCVM
 	@Override
 	public void			shutdown() throws Exception
 	{
+		app1.shutdown();
+		app2.shutdown();
+
 		// disconnect all ports explicitly connected in the deploy phase.
 		this.csPort.doDisconnection() ;
+		this.cdsPort.doDisconnection();
+		this.cssPort.doDisconnection();
 
+		// the super method will disconnect all the deployed components ports
 		super.shutdown() ;
 	}
 
@@ -228,12 +258,14 @@ extends		AbstractCVM
 	 */
 	public void			testScenario() throws Exception
 	{
-		System.out.println("test Scenario") ;
-		app1.startApp();
-
-		Thread.sleep(5000);
-
-		app2.startApp();
+		// wait a few seconds before lauching application
+		Thread.sleep(200L) ;
+		// start the first application
+		this.app1.startApp();
+		// wait 5 seconds
+		Thread.sleep(5000L) ;
+		// start the second application
+		this.app2.startApp();
 	}
 
 	/**
@@ -246,31 +278,29 @@ extends		AbstractCVM
 		// Uncomment next line to execute components in debug mode.
 		// AbstractCVM.toggleDebugMode() ;
 		try {
-			final TestAdmissionControler at = new TestAdmissionControler() ;
+			final TestAdmissionController tac = new TestAdmissionController() ;
 			// Deploy the components
-			at.deploy() ;
+			tac.deploy() ;
 			System.out.println("starting...") ;
 			// Start them.
-			at.start() ;
+			tac.start() ;
 			// Execute the chosen request generation test scenario in a
 			// separate thread.
-
-			System.out.println("starting...1") ;
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
 					try {
-						at.testScenario() ;
+						tac.testScenario() ;
 					} catch (Exception e) {
 						throw new RuntimeException(e) ;
 					}
 				}
 			}).start() ;
 			// Sleep to let the test scenario execute to completion.
-			Thread.sleep(90000L) ;
+			Thread.sleep(30000L) ;
 			// Shut down the application.
 			System.out.println("shutting down...") ;
-			at.shutdown() ;
+			tac.shutdown() ;
 			System.out.println("ending...") ;
 			// Exit from Java.
 			System.exit(0) ;
@@ -278,5 +308,4 @@ extends		AbstractCVM
 			throw new RuntimeException(e) ;
 		}
 	}
-
 }

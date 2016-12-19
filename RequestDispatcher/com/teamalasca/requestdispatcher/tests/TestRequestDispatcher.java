@@ -246,10 +246,7 @@ extends		AbstractCVM
 		// --------------------------------------------------------------------
 		// Creating the requestDispatcher component.
 		// --------------------------------------------------------------------
-		requestDispatcher = new RequestDispatcher(RequestDispatcherRequestSubmissionInboundPortURI, RequestDispatcherRequestNotificationInboundPortURI, RequestDispatcherRequestNotificationOutboundPortURI);
-
-		requestDispatcher.toggleTracing() ;
-		requestDispatcher.toggleLogging() ;
+		requestDispatcher = new RequestDispatcher("rd1",RequestDispatcherRequestSubmissionInboundPortURI, RequestDispatcherRequestNotificationInboundPortURI, RequestDispatcherRequestNotificationOutboundPortURI);
 
 		// Associating 3 VMs to the request dispatcher
 		requestDispatcher.associateVirtualMachine(VirtualMachineRequestSubmissionInboundPortURI1);
@@ -257,6 +254,7 @@ extends		AbstractCVM
 		requestDispatcher.associateVirtualMachine(VirtualMachineRequestSubmissionInboundPortURI3);
 
 		// Connecting VMs notifications ports with the one of the request dispatcher
+
 		RequestNotificationOutboundPort vmrnop1 =
 				(RequestNotificationOutboundPort) vm.findPortFromURI(
 						VirtualMachineRequestNotificationOutboundPortURI1) ;
@@ -306,13 +304,8 @@ extends		AbstractCVM
 		requestGenerator.toggleTracing() ;
 		requestGenerator.toggleLogging() ;
 
-		// Connecting the request generator to the application virtual machine.
-		// Request generators have three different interfaces:
-		// - one for submitting requests to application virtual machines,
-		// - one for receiving end of execution notifications from application
-		//   virtual machines, and
-		// - one for request generation management i.e., starting and stopping
-		//   the generation process.
+		// Connecting the request generator to request dispatcher
+		
 		RequestSubmissionOutboundPort rsobp =
 				(RequestSubmissionOutboundPort) requestGenerator.findPortFromURI(
 						RequestGeneratorRequestSubmissionOutboundPortURI) ;

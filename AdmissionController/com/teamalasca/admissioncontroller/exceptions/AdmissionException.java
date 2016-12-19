@@ -1,4 +1,4 @@
-package com.teamalasca.adminssioncontroller.exceptions;
+package com.teamalasca.admissioncontroller.exceptions;
 
 public class AdmissionException extends Exception {
 

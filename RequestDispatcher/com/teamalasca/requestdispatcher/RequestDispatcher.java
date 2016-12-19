@@ -23,13 +23,16 @@ import fr.upmc.datacenter.software.ports.RequestSubmissionOutboundPort;
 /**
  * A request dispatcher is a component receiving request submissions from
  * a given application, and dispatching these requests to the different VM
- * allocated for this application
+ * allocated for this application.
  */
 public final class RequestDispatcher extends AbstractComponent 
 implements RequestSubmissionHandlerI , RequestNotificationHandlerI{
 
-	/** URIs of the virtual machines allocated to this request dispatcher */
-	private final List<String> virtualMachinesPortURIs;
+	/** A private URI to identify this request dispatcher, for debug purpose*/
+	private final String URI;
+
+	/** URIs of the virtual machines inbound ports allocated to this request dispatcher */
+	private final List<String> virtualMachinesRequestSubmissionsInboundPortURIs;
 
 	/** Outbound ports of the request dispatcher connected with the virtual machines allocated for execute the application.
 	 * A linked list is used in order to deal with our dispatching policy */
@@ -38,19 +41,19 @@ implements RequestSubmissionHandlerI , RequestNotificationHandlerI{
 	/** Inbound port of the request dispatcher receiving notifications from the virtual machines */
 	private final RequestNotificationInboundPort rnip;
 
-	/** Inbound port of the request dispatcher connected with the application
-	 */
+	/** Inbound port of the request dispatcher connected with the application */
 	private final RequestSubmissionInboundPort rsip;
 
 	/** Outbound port  of the request dispatcher sending notifications to the application */
 	private final RequestNotificationOutboundPort rnop;
 
-	public RequestDispatcher(final String requestSubmissionInboundPortURI ,
+	public RequestDispatcher(final String requestDispatcherURI,final String requestSubmissionInboundPortURI ,
 			final String requestNotificationInboundPortURI,final String requestNotificationOutboundPortURI)
 					throws Exception {
 
+		this.URI = requestDispatcherURI;
 
-		this.virtualMachinesPortURIs = new ArrayList<>(); // for now, no vm is allocated to this request dispatcher
+		this.virtualMachinesRequestSubmissionsInboundPortURIs = new ArrayList<>(); // for now, no vm is allocated to this request dispatcher
 
 		this.rsops =new LinkedList<>(); // and no outbound port is initialized
 		this.addRequiredInterface(RequestSubmissionI.class);
@@ -75,19 +78,23 @@ implements RequestSubmissionHandlerI , RequestNotificationHandlerI{
 
 	}
 
+	public RequestDispatcher(final String requestSubmissionInboundPortURI ,
+			final String requestNotificationInboundPortURI,final String requestNotificationOutboundPortURI)
+					throws Exception {
+		this(AbstractPort.generatePortURI(), requestSubmissionInboundPortURI, requestNotificationInboundPortURI, requestNotificationOutboundPortURI);
+	}
+
 	public void associateVirtualMachine(final String virtualMachineRequestSubmissionInboundPortURI) throws Exception{
 
-		if(this.virtualMachinesPortURIs.contains(virtualMachineRequestSubmissionInboundPortURI)){
+		if(this.virtualMachinesRequestSubmissionsInboundPortURIs.contains(virtualMachineRequestSubmissionInboundPortURI)){
 			return;
 		}
 
 		// adding the new virtual machine to our internal vm list
-		this.virtualMachinesPortURIs.add(virtualMachineRequestSubmissionInboundPortURI);
+		this.virtualMachinesRequestSubmissionsInboundPortURIs.add(virtualMachineRequestSubmissionInboundPortURI);
 
 		// creating a new outbound port for the VM
-
 		final String URI = AbstractPort.generatePortURI();
-
 		RequestSubmissionOutboundPort rsop = new RequestSubmissionOutboundPort(URI,this);
 		this.addPort(rsop);
 		rsop.publishPort();
@@ -97,13 +104,13 @@ implements RequestSubmissionHandlerI , RequestNotificationHandlerI{
 
 		// adding the port to our internal outbound port list
 		this.rsops.addFirst(rsop);
-		
-		logMessage("a new virtual machine (submission input port:'"+ virtualMachineRequestSubmissionInboundPortURI + "') has been associated to the request dispatcher");
+
+		logMessage("a new virtual machine (submission input port:'"+ virtualMachineRequestSubmissionInboundPortURI + "') has been associated to " + this.toString());
 	}
 
 	public void dissociateVirtualMachine(final String virtualMachineRequestSubmissionInboundPortURI) throws Exception{
 
-		if(!this.virtualMachinesPortURIs.contains(virtualMachineRequestSubmissionInboundPortURI)){
+		if(!this.virtualMachinesRequestSubmissionsInboundPortURIs.contains(virtualMachineRequestSubmissionInboundPortURI)){
 			return;
 		}
 
@@ -121,24 +128,24 @@ implements RequestSubmissionHandlerI , RequestNotificationHandlerI{
 
 		}
 
-		this.virtualMachinesPortURIs.remove(virtualMachineRequestSubmissionInboundPortURI);
-		
-		logMessage("virtual machine (submission input port:'"+ virtualMachineRequestSubmissionInboundPortURI + "') has been dissociated to the request dispatcher");
+		this.virtualMachinesRequestSubmissionsInboundPortURIs.remove(virtualMachineRequestSubmissionInboundPortURI);
+
+		logMessage("virtual machine (submission input port:'"+ virtualMachineRequestSubmissionInboundPortURI + "') has been dissociated to "+this.toString());
 	}
 
 	@Override
 	public void acceptRequestSubmission(final RequestI r) throws Exception{
 
 		if(rsops.isEmpty())
-			throw new Exception("request '"+r.getRequestURI()+"' cant be handled because no vm is connected to the request dispatcher");
+			throw new Exception("request '"+r.getRequestURI()+"' cant be handled because no vm is connected to the "+this.toString());
 
 		RequestSubmissionOutboundPort rsop = rsops.removeFirst(); 
 
 		if(!rsop.connected())
-			throw new Exception("port '"+rsop.getPortURI()+"' of the request dispatcher is disconnected, that should not happen");
+			throw new Exception("port '"+rsop.getPortURI()+"' of "+this.toString()+" is disconnected, that should not happen");
 
 		rsop.submitRequest(r);
-		logMessage("request '"+r.getRequestURI()+"' submitted to request dispatcher");
+		logMessage("request '"+r.getRequestURI()+"' handled by the "+this.toString());
 
 		rsops.addLast(rsop); // the port is pushed at the last position of the list, performing a good ports turnover
 	}
@@ -147,15 +154,15 @@ implements RequestSubmissionHandlerI , RequestNotificationHandlerI{
 	public void acceptRequestSubmissionAndNotify(RequestI r) throws Exception {
 
 		if(rsops.isEmpty())
-			throw new Exception("request '"+r.getRequestURI()+"' cant be handled because no vm is connected to the request dispatcher");
+			throw new Exception("request '"+r.getRequestURI()+"' cant be handled because no vm is connected to the "+this.toString());
 
 		RequestSubmissionOutboundPort rsop = rsops.removeFirst(); 
 
 		if(!rsop.connected())
-			throw new Exception("port '"+rsop.getPortURI()+"' of the request dispatcher is disconnected, that should not happen");
+			throw new Exception("port '"+rsop.getPortURI()+"' of "+this.toString()+" is disconnected, that should not happen");
 
 		rsop.submitRequestAndNotify(r);
-		logMessage("request '"+r.getRequestURI()+"' submitted to request dispatcher");
+		logMessage("request '"+r.getRequestURI()+"' submitted to "+this.toString());
 
 		rsops.addLast(rsop); // the port is pushed at the last position of the list, performing a good ports turnover
 	}
@@ -186,6 +193,11 @@ implements RequestSubmissionHandlerI , RequestNotificationHandlerI{
 
 		rnop.notifyRequestTermination(r);
 
+	}
+
+	@Override
+	public String toString(){
+		return "request dispatcher '" + URI + "'";
 	}
 }
 
