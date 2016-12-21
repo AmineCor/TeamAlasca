@@ -5,8 +5,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.teamalasca.adminssioncontroller.AdmissionController;
+import com.teamalasca.admissioncontroller.AdmissionController;
 import com.teamalasca.application.RGApplication;
+
 import fr.upmc.components.AbstractComponent;
 import fr.upmc.components.cvm.AbstractCVM;
 import fr.upmc.datacenter.hardware.computers.Computer;
@@ -174,7 +175,7 @@ extends		AbstractCVM
 		app = new RGApplication("MyApp", this);
 		this.addDeployedComponent(app);
 		
-	    AdmissionController ac = new AdmissionController (this,"AD",ComputerServicesOutboundPortURI,ComputerDynamicStateDataInboundPortURI, computerURI);
+	    AdmissionController ac = new AdmissionController ("AD",ComputerServicesOutboundPortURI,ComputerDynamicStateDataInboundPortURI, computerURI);
 		this.addDeployedComponent(ac);
 		app.doConnectionAdmissionControler("AD_asibp");
 		
