@@ -46,7 +46,7 @@ implements RequestSubmissionHandlerI , RequestNotificationHandlerI{
 	private final RequestSubmissionInboundPort rsip;
 
 	/** Outbound port  of the request dispatcher sending notifications to the application */
-	private final RequestNotificationOutboundPort rnop;
+	protected final RequestNotificationOutboundPort rnop;
 
 	public RequestDispatcher(final String requestDispatcherURI,final String requestSubmissionInboundPortURI ,
 			final String requestNotificationInboundPortURI,final String requestNotificationOutboundPortURI)

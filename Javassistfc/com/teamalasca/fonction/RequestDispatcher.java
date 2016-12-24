@@ -22,14 +22,16 @@ public class RequestDispatcher extends com.teamalasca.requestdispatcher.RequestD
 	public void doAppConnexion(String uriPort, Class<?> offeredInterface,HashMap<String,String> methodNamesMap) throws Exception
 	{		
 		connectorClass = fcMakeconnector.makeConnectorClassJavassist("makeConnectorClassJavassist.GenerateConnector",AbstractConnector.class, RequestNotificationI.class, offeredInterface, methodNamesMap) ; 
-		//Je sais pas c'est quoi ce port
-		rsb.doConnection(uriPort, connectorClass.getCanonicalName());
+		//C'est notre request notification outBound port declaré dans le RD qui exist dans com.teamalasca.requestdispatcher.RequestDispatcher
+		//Le packege de notre RD original
+		//Utilisé pour faire la connection entre notre RD et lapplication 
+		rnop.doConnection(uriPort, connectorClass.getCanonicalName());
 	}
 	
 	@Override
 	public void acceptRequestTerminationNotification(RequestI r) throws Exception {
 		logMessage("Request terminated "+r.getRequestURI());
-		//Pareil
-		((RequestNotificationI)rsb).notifyRequestTermination(r);
+		//Meme port 
+		((RequestNotificationI)rnop).notifyRequestTermination(r);
 	}
 }
