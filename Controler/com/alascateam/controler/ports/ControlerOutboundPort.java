@@ -2,6 +2,7 @@ package com.alascateam.controler.ports;
 
 import com.alascateam.admission.interfaces.VMRequestI;
 import com.alascateam.controler.interfaces.ControlerI;
+
 import fr.upmc.components.ComponentI;
 import fr.upmc.components.ports.AbstractOutboundPort;
 
@@ -10,9 +11,9 @@ public class ControlerOutboundPort extends AbstractOutboundPort implements Contr
 
 	
 
-	public ControlerOutboundPort(Class<?> implementedInterface, ComponentI owner)
+	public ControlerOutboundPort(Class<?> string, ComponentI owner)
 			throws Exception {
-		super(implementedInterface, owner);
+		super(string, owner);
 		// TODO Auto-generated constructor stub
 		
 	}
