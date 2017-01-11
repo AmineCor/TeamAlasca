@@ -9,6 +9,8 @@ import com.alascateam.controler.interfaces.ControlerI;
 
 public class ControlerInboundPort extends AbstractDataInboundPort implements ControlerI {
 
+	private static final long serialVersionUID = 1L;
+
 	public ControlerInboundPort(Class<?> implementedPullInterface,
 			Class<?> implementedPushInterface, ComponentI owner)
 			throws Exception {

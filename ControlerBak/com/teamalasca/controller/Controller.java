@@ -1,4 +1,4 @@
-package com.teamalasca.controler;
+package com.teamalasca.controller;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +9,7 @@ import com.alascateam.connectors.AdaptateurConnector;
 import com.alascateam.controler.interfaces.ControlerI;
 import com.alascateam.controler.ports.ControlerOutboundPort;
 import com.alascateam.distribute.ports.ControlerCapteurOutboundPort;
-import com.teamalasca.controler.Adaptateurofrequests.Frequency;
+import com.teamalasca.controller.AdaptateurOfRequests.Frequency;
 import com.teamalasca.distribute.DataDistributeDynamic;
 import com.teamalasca.distribute.DataDistributeDynamicReceptionI;
 
@@ -95,21 +95,21 @@ public class Controller extends AbstractComponent implements DataDistributeDynam
 										if (m > s1 * ( 1 + s_vm)) 
 										{
 											msg += "This VM have to be saved ";
-											Adaptateurofrequests ar = new Adaptateurofrequests("VM", app_uri);
+											AdaptateurOfRequests ar = new AdaptateurOfRequests("VM", app_uri);
 											obp.allocateVM(ar);																
 
 										}
 										else if (m > s1 * (1 + score))
 										{
 											msg += "SAVE ME !! Add Core";
-											Adaptateurofrequests ar = new Adaptateurofrequests("VM", app_uri);
+											AdaptateurOfRequests ar = new AdaptateurOfRequests("VM", app_uri);
 											obp.allocateCore(ar);															
 
 										}
 										else if (m > s1 * ( 1 + sfrequence)) 
 										{
 											msg += "SAVE ME !! Up Frequency";
-											Adaptateurofrequests ar = new Adaptateurofrequests("VM", app_uri);
+											AdaptateurOfRequests ar = new AdaptateurOfRequests("VM", app_uri);
 											ar.setFrequency(Frequency.up);
 											obp.changeFrequency(ar);
 										}
@@ -120,19 +120,19 @@ public class Controller extends AbstractComponent implements DataDistributeDynam
 										if (m <= s1 * (1 - s_vm)) 
 										{
 											msg += "SAVE ME !! delete VM";
-											Adaptateurofrequests ar = new Adaptateurofrequests("VM", app_uri);
+											AdaptateurOfRequests ar = new AdaptateurOfRequests("VM", app_uri);
 											obp.releaseVM(ar);
 										}
 										else if (m <= s1 * (1 - score)) 
 										{
 											msg += "SAVE ME !! delete Core";
-											Adaptateurofrequests ar = new Adaptateurofrequests("VM", app_uri);
+											AdaptateurOfRequests ar = new AdaptateurOfRequests("VM", app_uri);
 											obp.releaseCore(ar);
 										}
 										else if (m <= s1 * (1 - sfrequence)) 
 										{
 											msg += "SAVE ME !! Down Frequency";
-											Adaptateurofrequests ar = new Adaptateurofrequests("VM", app_uri);
+											AdaptateurOfRequests ar = new AdaptateurOfRequests("VM", app_uri);
 											ar.setFrequency(Frequency.down);
 											obp.changeFrequency(ar);
 										}
@@ -154,7 +154,5 @@ public class Controller extends AbstractComponent implements DataDistributeDynam
 							}
 						}, interval, TimeUnit.MILLISECONDS) ;
 	}
-
-
 
 }

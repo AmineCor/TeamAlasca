@@ -7,8 +7,9 @@ import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestI;
  *
  */
 
-public final class AdmissionRequest implements AdmissionRequestI{
-
+public final class AdmissionRequest
+implements AdmissionRequestI
+{
 
 	boolean allowed;
 	private final String applicationURI;
@@ -16,62 +17,70 @@ public final class AdmissionRequest implements AdmissionRequestI{
 	private String rnop;
 	private String anip;
 	
-
-	public AdmissionRequest(String applicationURI,String applicationAdmissionNotificationInboundPortURI) {
+	public AdmissionRequest(String applicationURI, String applicationAdmissionNotificationInboundPortURI)
+	{
 		super();
+		
 		this.allowed = false;
 		this.applicationURI = applicationURI;
 		this.anip = applicationAdmissionNotificationInboundPortURI;
-		
 	}
 
 	@Override
-	public String getApplicationURI() {
+	public String getApplicationURI()
+	{
 		return applicationURI;
 	}
 
 	@Override
-	public boolean isAccepted() {
+	public boolean isAccepted()
+	{
 		return allowed;
 	}
 
 	@Override
-	public String getRequestSubmissionInboundPortURI() {
+	public String getRequestSubmissionInboundPortURI()
+	{
 		return rsip;
 	}
 
 	@Override
-	public void acceptRequest() {
+	public void acceptRequest()
+	{
 		this.allowed = true;
 	}
 
 	@Override
-	public void refuseRequest() {
+	public void refuseRequest()
+	{
 		this.allowed = false;
 	}
 
 	@Override
-	public String getApplicationAdmissionNotificationInboundPortURI() {
-		return anip;
+	public String getApplicationAdmissionNotificationInboundPortURI()
+	{
+		return this.anip;
 	}
 
 	@Override
-	public String getRequestNotificationOutboundPortURI() {
-		return rnop;
+	public String getRequestNotificationOutboundPortURI()
+	{
+		return this.rnop;
 	}
 
 	@Override
 	public void setRequestSubmissionInboundPortURI(
-			String requestSubmissionInboundPortURI) {
+			String requestSubmissionInboundPortURI)
+	{
 		this.rsip = requestSubmissionInboundPortURI;
 		
 	}
 
 	@Override
 	public void setRequestNotificationOutboundPortURI(
-			String requestNotificationOutboundPortURI) {
+			String requestNotificationOutboundPortURI)
+	{
 		this.rnop = requestNotificationOutboundPortURI;
-		
 	}
 
 }

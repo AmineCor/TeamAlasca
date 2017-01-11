@@ -22,7 +22,9 @@ import fr.upmc.datacenterclient.requestgenerator.RequestGenerator;
  * @author Corchi - George
  *
  */
-public class RGApplication  extends AbstractComponent implements AdmissionNotificationHandlerI, RequestNotificationHandlerI
+public class RGApplication
+extends AbstractComponent
+implements AdmissionNotificationHandlerI, RequestNotificationHandlerI
 {
 
 	RequestGenerator rg ;
@@ -30,33 +32,33 @@ public class RGApplication  extends AbstractComponent implements AdmissionNotifi
 	AdmissionNotificationInboundPort anibp;
 	AdmissionRequestOutboundPort asop;
 
-
-
-	public RGApplication(String uri,AbstractCVM acvm) throws Exception {
+	public RGApplication(String uri, AbstractCVM acvm) throws Exception
+	{
 		super();
 
 		URI = uri;
-		rg =
-				new RequestGenerator(
-						URI+"_rg",			// generator component URI
-						500.0,			// mean time between two requests
-						6000000000L,	// mean number of instructions in requests
-						URI+"_rg_mip",
-						URI+"_rg_rsobp",
-						URI+"_rg_rnibp");
+		rg = new RequestGenerator(
+				URI + "_rg",		// generator component URI
+				500.0,				// mean time between two requests
+				6000000000L,		// mean number of instructions in requests
+				URI + "_rg_mip",
+				URI + "_rg_rsobp",
+				URI + "_rg_rnibp"
+		);
 		acvm.addDeployedComponent(rg);
+		
 		rg.toggleLogging();
 		rg.toggleTracing();
+		
 		this.addOfferedInterface(AdmissionNotificationI.class);
-		this.anibp = new AdmissionNotificationInboundPort(URI+"_anibp", this) ;
+		this.anibp = new AdmissionNotificationInboundPort(URI + "_anibp", this) ;
 		this.addPort(this.anibp) ;
 		this.anibp.publishPort() ;
 
 		this.addRequiredInterface(AdmissionRequestSubmitterI.class);
-		this.asop = new AdmissionRequestOutboundPort(URI+"_asobp", this) ;
+		this.asop = new AdmissionRequestOutboundPort(URI + "_asobp", this) ;
 		this.addPort(this.asop) ;
-		this.asop.publishPort() ;	
-
+		this.asop.publishPort() ;
 	}
 
 	@Override
@@ -68,7 +70,7 @@ public class RGApplication  extends AbstractComponent implements AdmissionNotifi
 
 	public void	startApp() throws Exception
 	{
-		logMessage(this.toString()+" starts");
+		logMessage(this.toString() + " starts");
 		AdmissionRequest request = new AdmissionRequest(this.URI, anibp.getPortURI());
 		this.asop.handleAdmissionRequestAndNotify(request);
 	}
@@ -79,29 +81,23 @@ public class RGApplication  extends AbstractComponent implements AdmissionNotifi
 	}
 
 	@Override
-	public void acceptAdmissionNotification(AdmissionRequestI request) throws Exception {
-		boolean response = request.isAccepted();
-
-		if(response){
+	public void acceptAdmissionNotification(AdmissionRequestI request) throws Exception 
+	{
+		if (request.isAccepted()) {
 			String rqURI = request.getRequestSubmissionInboundPortURI();
-			rg.findPortFromURI(URI+"_rg_rsobp").doConnection(rqURI, RequestSubmissionConnector.class.getCanonicalName());
+			rg.findPortFromURI(URI + "_rg_rsobp").doConnection(rqURI, RequestSubmissionConnector.class.getCanonicalName());
 			rg.startGeneration();
 		}
 	}
 
 	@Override
 	public String toString() {
-		return "application '"+URI+"'";
+		return "application '" + URI + "'";
 	}
 
-	public void startAsync() {
+	public void startAsync()
+	{
 		// TODO Auto-generated method stub
-		
 	}
-
-
 
 }
-
-
-

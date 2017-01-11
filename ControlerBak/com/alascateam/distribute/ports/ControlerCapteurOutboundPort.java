@@ -1,6 +1,5 @@
 package com.alascateam.distribute.ports;
 
-import com.alascateam.distsribute.interfaces.DataDistributeDynamicI;
 import com.teamalasca.distribute.DataDistributeDynamic;
 import com.teamalasca.distribute.DataDistributeDynamicReceptionI;
 
@@ -10,9 +9,6 @@ import fr.upmc.datacenter.ports.AbstractControlledDataOutboundPort;
 
 public class ControlerCapteurOutboundPort extends AbstractControlledDataOutboundPort {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 
 	public ControlerCapteurOutboundPort(ComponentI owner) throws Exception {

@@ -1,20 +1,23 @@
-package com.teamalasca.controler;
+package com.teamalasca.controller;
 
 
 import com.alascateam.admission.interfaces.VMRequestI;
 
-public class Adaptateurofrequests implements VMRequestI {
+public class AdaptateurOfRequests implements VMRequestI {
 
 	private static final long serialVersionUID = 1L;
 	
 	private String vmuri;
 	private String application_uri;
-	enum Frequency {up,down};
+	
+	enum Frequency {
+		up,
+		down
+	};
 	private Frequency freq;
 	
-	
 
-	public Adaptateurofrequests(String vmuri, String application_uri) {
+	public AdaptateurOfRequests(String vmuri, String application_uri) {
 		super();
 		this.vmuri = vmuri;
 		this.application_uri = application_uri;
@@ -46,8 +49,4 @@ public class Adaptateurofrequests implements VMRequestI {
 	{
 		this.freq=f;
 	}
-
-	
-	
-
 }

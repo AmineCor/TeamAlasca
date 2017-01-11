@@ -1,7 +1,5 @@
 package com.alascateam.distribute.ports;
 
-import com.teamalasca.distribute.DataDistributeDynamic;
-import com.teamalasca.fonction.RequestDispatcher;
 import com.teamalasca.requestdispatcherPC.RequestDispatcherPC;
 
 import fr.upmc.components.ComponentI;
@@ -10,6 +8,8 @@ import fr.upmc.components.interfaces.DataOfferedI.DataI;
 import fr.upmc.datacenter.ports.AbstractControlledDataInboundPort;
 
 public class ControlerCapteurInboundPort extends AbstractControlledDataInboundPort {
+
+	private static final long serialVersionUID = 1L;
 
 	public ControlerCapteurInboundPort(String string, ComponentI owner) throws Exception {
 		super(owner);
