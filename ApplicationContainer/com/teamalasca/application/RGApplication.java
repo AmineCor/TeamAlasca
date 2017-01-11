@@ -94,6 +94,11 @@ public class RGApplication  extends AbstractComponent implements AdmissionNotifi
 		return "application '"+URI+"'";
 	}
 
+	public void startAsync() {
+		// TODO Auto-generated method stub
+		
+	}
+
 
 
 }

@@ -8,30 +8,18 @@ import java.util.Set;
 
 import com.teamalasca.admissioncontroller.AdmissionController;
 import com.teamalasca.application.RGApplication;
-import com.teamalasca.requestdispatcher.RequestDispatcher;
 
 import fr.upmc.components.AbstractComponent;
 import fr.upmc.components.connectors.DataConnector;
 import fr.upmc.components.cvm.AbstractCVM;
 import fr.upmc.datacenter.connectors.ControlledDataConnector;
 import fr.upmc.datacenter.hardware.computers.Computer;
-import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
 import fr.upmc.datacenter.hardware.computers.connectors.ComputerServicesConnector;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerDynamicStateDataOutboundPort;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerServicesOutboundPort;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerStaticStateDataOutboundPort;
 import fr.upmc.datacenter.hardware.processors.Processor;
 import fr.upmc.datacenter.hardware.tests.ComputerMonitor;
-import fr.upmc.datacenter.software.applicationvm.ApplicationVM;
-import fr.upmc.datacenter.software.applicationvm.connectors.ApplicationVMManagementConnector;
-import fr.upmc.datacenter.software.applicationvm.ports.ApplicationVMManagementOutboundPort;
-import fr.upmc.datacenter.software.connectors.RequestNotificationConnector;
-import fr.upmc.datacenter.software.connectors.RequestSubmissionConnector;
-import fr.upmc.datacenter.software.ports.RequestNotificationOutboundPort;
-import fr.upmc.datacenter.software.ports.RequestSubmissionOutboundPort;
-import fr.upmc.datacenterclient.requestgenerator.RequestGenerator;
-import fr.upmc.datacenterclient.requestgenerator.connectors.RequestGeneratorManagementConnector;
-import fr.upmc.datacenterclient.requestgenerator.ports.RequestGeneratorManagementOutboundPort;
 import fr.upmc.datacenterclient.tests.TestRequestGenerator;
 
 /**

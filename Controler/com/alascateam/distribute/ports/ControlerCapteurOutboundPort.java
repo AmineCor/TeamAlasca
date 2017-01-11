@@ -1,8 +1,8 @@
 package com.alascateam.distribute.ports;
 
-import com.alascateam.distsribute.interfaces.DataDistributeDynamiqueI;
-import com.teamalasca.distribute.DataDistributeDynamique;
-import com.teamalasca.distribute.DataDistributeDynamiqueReceptionI;
+import com.alascateam.distsribute.interfaces.DataDistributeDynamicI;
+import com.teamalasca.distribute.DataDistributeDynamic;
+import com.teamalasca.distribute.DataDistributeDynamicReceptionI;
 
 import fr.upmc.components.ComponentI;
 import fr.upmc.components.interfaces.DataRequiredI.DataI;
@@ -22,7 +22,7 @@ public class ControlerCapteurOutboundPort extends AbstractControlledDataOutbound
 
 	@Override
 	public void receive(DataI d) throws Exception {
-		((DataDistributeDynamiqueReceptionI)this.owner).receptionOfDynamiqueDataDispatcher((DataDistributeDynamique)d);
+		((DataDistributeDynamicReceptionI)this.owner).receptionOfDynamicDataDispatcher((DataDistributeDynamic)d);
 		
 	}
 

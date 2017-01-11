@@ -3,7 +3,7 @@ package com.alascateam.dispatcher.ports;
 
 import com.alascateam.admission.interfaces.AdmissionNotificationI;
 import com.alascateam.admission.interfaces.AjoutVMRequestI;
-import com.alascateam.admission.interfaces.AjoutVMRequesthandlerI;
+import com.alascateam.admission.interfaces.AddVMRequestHandlerI;
 import com.alascateam.admission.interfaces.VMRequestI;
 
 import fr.upmc.components.ComponentI;
@@ -32,8 +32,8 @@ public class AjoutVMRequestInboundport extends AbstractInboundPort implements Aj
 	public void sendAddVMRequest(final VMRequestI request) throws Exception {
 		
 		
-		final AjoutVMRequesthandlerI handler =
-				(AjoutVMRequesthandlerI) this.owner ;
+		final AddVMRequestHandlerI handler =
+				(AddVMRequestHandlerI) this.owner ;
 		this.owner.handleRequestAsync(
 				new ComponentI.ComponentService<Void>() {
 					@Override

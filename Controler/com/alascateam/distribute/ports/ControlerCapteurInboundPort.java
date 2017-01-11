@@ -1,6 +1,6 @@
 package com.alascateam.distribute.ports;
 
-import com.teamalasca.distribute.DataDistributeDynamique;
+import com.teamalasca.distribute.DataDistributeDynamic;
 import com.teamalasca.fonction.RequestDispatcher;
 import com.teamalasca.requestdispatcherPC.RequestDispatcherPC;
 

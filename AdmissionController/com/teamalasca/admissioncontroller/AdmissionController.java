@@ -3,16 +3,15 @@ package com.teamalasca.admissioncontroller;
 
 
 import com.teamalasca.admissioncontroller.connectors.AdmissionNotificationConnector;
-import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestI;
 import com.teamalasca.admissioncontroller.interfaces.AdmissionNotificationI;
 import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestHandlerI;
+import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestI;
 import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestSubmitterI;
 import com.teamalasca.admissioncontroller.ports.AdmissionNotificationOutboundPort;
 import com.teamalasca.admissioncontroller.ports.AdmissionRequestInboundPort;
 import com.teamalasca.requestdispatcher.RequestDispatcher;
 
 import fr.upmc.components.AbstractComponent;
-import fr.upmc.components.cvm.AbstractCVM;
 import fr.upmc.components.ports.AbstractPort;
 import fr.upmc.datacenter.connectors.ControlledDataConnector;
 import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
@@ -21,7 +20,6 @@ import fr.upmc.datacenter.hardware.computers.interfaces.ComputerDynamicStateI;
 import fr.upmc.datacenter.hardware.computers.interfaces.ComputerServicesI;
 import fr.upmc.datacenter.hardware.computers.interfaces.ComputerStateDataConsumerI;
 import fr.upmc.datacenter.hardware.computers.interfaces.ComputerStaticStateI;
-import fr.upmc.datacenter.hardware.computers.ports.ComputerDynamicStateDataInboundPort;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerDynamicStateDataOutboundPort;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerServicesOutboundPort;
 import fr.upmc.datacenter.interfaces.ControlledDataRequiredI;
@@ -29,7 +27,6 @@ import fr.upmc.datacenter.software.applicationvm.ApplicationVM;
 import fr.upmc.datacenter.software.applicationvm.connectors.ApplicationVMManagementConnector;
 import fr.upmc.datacenter.software.applicationvm.ports.ApplicationVMManagementOutboundPort;
 import fr.upmc.datacenter.software.connectors.RequestNotificationConnector;
-import fr.upmc.datacenter.software.connectors.RequestSubmissionConnector;
 
 /**
  * An admission controller is a component receiving admission requests from applications
@@ -108,6 +105,8 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 		this(AbstractPort.generatePortURI(), admissionRequestInboundPortURI, admissionNotifiationOutboundPortURI, computerServiceOutboundPortURI, computerDynamicStateDataInboundPortURI);
 
 	}
+
+	
 
 	/** Connecting the admission controller with a computer component */
 	public void doConnectionWithComputer(final String computerURI,final String computerServicesInboundPortURI,final String computerDynamicStateDataInboundPortURI) throws Exception{

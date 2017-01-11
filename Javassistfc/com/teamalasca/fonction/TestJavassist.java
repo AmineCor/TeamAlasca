@@ -172,7 +172,7 @@ extends		AbstractCVM
 		vm.toggleLogging() ;
 		
 		
-		app = new RGApplication("MyApp", this);
+		app = new RGApplication("MyApplication", this);
 		this.addDeployedComponent(app);
 		
 	    AdmissionController ac = new AdmissionController ("AD",ComputerServicesOutboundPortURI,ComputerDynamicStateDataInboundPortURI, computerURI);

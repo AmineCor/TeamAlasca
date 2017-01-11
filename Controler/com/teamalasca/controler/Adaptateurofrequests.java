@@ -5,6 +5,8 @@ import com.alascateam.admission.interfaces.VMRequestI;
 
 public class Adaptateurofrequests implements VMRequestI {
 
+	private static final long serialVersionUID = 1L;
+	
 	private String vmuri;
 	private String application_uri;
 	enum Frequency {up,down};

@@ -4,7 +4,7 @@ import fr.upmc.components.interfaces.DataOfferedI;
 import fr.upmc.components.interfaces.DataRequiredI;
 import fr.upmc.datacenter.interfaces.TimeStampingI;
 
-public interface DataDistributeDynamiqueI extends DataOfferedI.DataI,
+public interface DataDistributeDynamicI extends DataOfferedI.DataI,
 DataRequiredI.DataI,
 TimeStampingI {
 	
