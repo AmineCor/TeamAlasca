@@ -1,12 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="RequestDispatcher"/>
-	<classpathentry kind="src" path="AdmissionController"/>
-	<classpathentry kind="src" path="ApplicationContainer"/>
-	<classpathentry kind="src" path="Javassistfc"/>
-	<classpathentry kind="src" path="ControlerBak"/>
-	<classpathentry kind="src" path="AutonomicController"/>
-	<classpathentry kind="src" path="Tests"/>
+	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
 	<classpathentry kind="lib" path="jars/BasicComponentModel-14092016.jar"/>
 	<classpathentry kind="lib" path="jars/DataCenter-27092016.jar"/>

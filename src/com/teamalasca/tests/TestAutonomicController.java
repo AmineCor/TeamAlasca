@@ -1,4 +1,4 @@
-package test;
+package com.teamalasca.tests;
 
 
 import java.util.HashMap;

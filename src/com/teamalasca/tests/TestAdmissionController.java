@@ -1,4 +1,4 @@
-package com.teamalasca.admissioncontroller.tests;
+package com.teamalasca.tests;
 
 
 import java.util.HashMap;

@@ -1,4 +1,4 @@
-package com.teamalasca.requestdispatcher.tests;
+package com.teamalasca.tests;
 
 
 import java.util.HashMap;

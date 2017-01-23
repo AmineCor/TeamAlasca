@@ -35,6 +35,14 @@ import fr.upmc.datacenter.software.ports.RequestSubmissionOutboundPort;
  * a given application, and dispatching these requests to the different VM
  * allocated for this application.
  */
+/**
+ * @author clementgeorge
+ *
+ */
+/**
+ * @author clementgeorge
+ *
+ */
 public class RequestDispatcher
 extends AbstractComponent 
 implements RequestSubmissionHandlerI,
