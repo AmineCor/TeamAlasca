@@ -1,5 +1,8 @@
 package com.teamalasca.autonomiccontroller;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.teamalasca.requestdispatcher.interfaces.RequestDispatcherDynamicStateI;
 import com.teamalasca.requestdispatcher.interfaces.RequestDispatcherStateDataConsumerI;
 import com.teamalasca.requestdispatcher.ports.RequestDispatcherDynamicStateDataOutboundPort;
@@ -7,27 +10,35 @@ import com.teamalasca.requestdispatcher.ports.RequestDispatcherDynamicStateDataO
 import fr.upmc.components.AbstractComponent;
 import fr.upmc.components.ports.AbstractPort;
 import fr.upmc.datacenter.connectors.ControlledDataConnector;
+import fr.upmc.datacenter.hardware.computers.interfaces.ComputerDynamicStateI;
+import fr.upmc.datacenter.hardware.computers.interfaces.ComputerStateDataConsumerI;
+import fr.upmc.datacenter.hardware.computers.interfaces.ComputerStaticStateI;
 import fr.upmc.datacenter.interfaces.ControlledDataRequiredI;
 
 public final class AutonomicController extends AbstractComponent
-implements RequestDispatcherStateDataConsumerI {
-	
+implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
+
+	private final static int MAX_SIZE_AVERAGE_LIST = 3;
+
 	/** A private URI to identify this autonomic controller, for debug purpose */
 	private final String URI;
-	
+
 	/** URI of the dispatcher associated with this autonomic controller */
 	private String requestDispatcherURI;
-	
+
 	/** Outbound port connected to the request dispatcher component to receive its data */
 	private RequestDispatcherDynamicStateDataOutboundPort rddsdop;
+
+	private List<Double> requestExecutionAverages;
 	
-	private Double requestExecutionAverage;
-	
+	private boolean[][] ressources;
+
 	public AutonomicController(String autonomicControllerURI) {
 		super();
 		this.URI = autonomicControllerURI;
+		requestExecutionAverages = new ArrayList<Double>();
 	}
-	
+
 	public AutonomicController() {
 		this(AbstractPort.generatePortURI());
 	}
@@ -35,23 +46,27 @@ implements RequestDispatcherStateDataConsumerI {
 	@Override
 	public void acceptRequestDispatcherDynamicData(String dispatcherURI,
 			RequestDispatcherDynamicStateI currentDynamicState)
-			throws Exception {
-		
+					throws Exception {
+
 		this.logMessage(this.toString() + "received a message from a dispatcher");
-		
+
 		if(dispatcherURI != requestDispatcherURI) // data received from an unknown dispatcher
 			return;
-		
-		synchronized (requestExecutionAverage) {
-			requestExecutionAverage = currentDynamicState.getRequestExecutionTimeAverage();
+
+		synchronized (requestExecutionAverages) {
+			requestExecutionAverages.add(currentDynamicState.getRequestExecutionTimeAverage());
+
+			// For moving average, we only need 3 values
+			while (requestExecutionAverages.size() > MAX_SIZE_AVERAGE_LIST) {
+				requestExecutionAverages.remove(0);
+			}
 		}
 	}
-	
+
 	/** Connecting the autonomic controller with the request dispatcher */
 	public void doConnectionWithRequestDispatcher(final String requestDispatcherURI,final String requestDispatcherDynamicStateDataInboundPortURI) throws Exception{
-		
+
 		this.requestDispatcherURI = requestDispatcherURI;
-		
 		this.rddsdop = new RequestDispatcherDynamicStateDataOutboundPort(this, requestDispatcherURI);
 		this.addPort(rddsdop);
 		this.rddsdop.publishPort();
@@ -61,10 +76,24 @@ implements RequestDispatcherStateDataConsumerI {
 				ControlledDataConnector.class.getCanonicalName());
 		this.rddsdop.startUnlimitedPushing(200);
 	}
-	
+
 	@Override
 	public String toString() {
 		return "autonomic controller '"+this.URI+"'";
+	}
+
+	@Override
+	public void acceptComputerStaticData(String computerURI,
+			ComputerStaticStateI staticState) throws Exception {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void acceptComputerDynamicData(String computerURI,
+			ComputerDynamicStateI currentDynamicState) throws Exception {
+		// TODO Auto-generated method stub
+		
 	}
 
 }
