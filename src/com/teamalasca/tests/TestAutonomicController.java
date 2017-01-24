@@ -176,7 +176,7 @@ extends		AbstractCVM
 
 		// --------------------------------------------------------------------
 
-		admissionController  = new AdmissionController("ad1",
+		admissionController  = new AdmissionController("ac1",
 				AdmissionControllerAdmissionRequestInboundPortURI,
 				AdmissionControllerAdmissionNotifiationOutboundPortURI,
 				AdmissionControllerComputerServiceOutboundPortURI,
@@ -190,14 +190,14 @@ extends		AbstractCVM
 
 		// -------------- Creating 2 applications ----------- //
 
-		app1 = new RGApplication("app1",this);
+		app1 = new RGApplication("app1");
 		this.addDeployedComponent(app1);
 		app1.doConnectionAdmissionControler(AdmissionControllerAdmissionRequestInboundPortURI);
 
-		app1.toggleTracing() ;
-		app1.toggleLogging() ;
+		app1.toggleTracing();
+		app1.toggleLogging();
 
-		app2 = new RGApplication("app2",this);
+		app2 = new RGApplication("app2");
 
 		this.addDeployedComponent(app2);
 		app2.doConnectionAdmissionControler(AdmissionControllerAdmissionRequestInboundPortURI);

@@ -23,7 +23,7 @@ implements RequestDispatcherDynamicStateI
 	}
 	
 	@Override
-	public double getExecutionTimeAvg()
+	public double getRequestExecutionTimeAverage()
 	{
 		return average;
 	}

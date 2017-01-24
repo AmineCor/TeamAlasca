@@ -17,6 +17,8 @@ import fr.upmc.components.AbstractComponent;
 import fr.upmc.components.ComponentI;
 import fr.upmc.components.exceptions.ComponentShutdownException;
 import fr.upmc.components.ports.AbstractPort;
+import fr.upmc.datacenter.interfaces.ControlledDataOfferedI;
+import fr.upmc.datacenter.interfaces.ControlledDataRequiredI;
 import fr.upmc.datacenter.interfaces.PushModeControllerI;
 import fr.upmc.datacenter.software.connectors.RequestSubmissionConnector;
 import fr.upmc.datacenter.software.interfaces.RequestI;
@@ -35,14 +37,6 @@ import fr.upmc.datacenter.software.ports.RequestSubmissionOutboundPort;
  * a given application, and dispatching these requests to the different VM
  * allocated for this application.
  */
-/**
- * @author clementgeorge
- *
- */
-/**
- * @author clementgeorge
- *
- */
 public class RequestDispatcher
 extends AbstractComponent 
 implements RequestSubmissionHandlerI,
@@ -51,7 +45,7 @@ implements RequestSubmissionHandlerI,
 {
 
 	/** A private URI to identify this request dispatcher, for debug purpose*/
-	private final String requestDispatcherUri;
+	private final String URI;
 
 	/** URIs of the virtual machines inbound ports allocated to this request dispatcher */
 	private final List<String> virtualMachinesRequestSubmissionsInboundPortURIs;
@@ -70,7 +64,7 @@ implements RequestSubmissionHandlerI,
 	protected final RequestNotificationOutboundPort rnop;
 	
 	/** Request dispatcher data inbound port through which it pushes its dynamic data */
-	protected RequestDispatcherDynamicStateDataInboundPort requestDispatcherDynamicStateDataInboundPort;
+	private RequestDispatcherDynamicStateDataInboundPort rddsdip;
 	
 	/** Map to keep execution time for each request */
 	private Map<String, Long> executionTimeRequest;
@@ -91,10 +85,13 @@ implements RequestSubmissionHandlerI,
 	private ScheduledFuture<?> pushingFuture;
 	
 	public RequestDispatcher(final String requestDispatcherURI, final String requestSubmissionInboundPortURI,
-			final String requestNotificationInboundPortURI, final String requestNotificationOutboundPortURI)
+			final String requestNotificationInboundPortURI, final String requestNotificationOutboundPortURI, final String requestDispatcherDynamicStateDataInboundPortURI)
 					throws Exception
 	{
-		this.requestDispatcherUri = requestDispatcherURI;
+		
+		super(1,1);
+		
+		this.URI = requestDispatcherURI;
 
 		// for now, no vm is allocated to this request dispatcher
 		this.virtualMachinesRequestSubmissionsInboundPortURIs = new ArrayList<>();
@@ -118,6 +115,11 @@ implements RequestSubmissionHandlerI,
 		this.addPort(this.rnip) ;
 		this.rnip.publishPort() ;
 		this.addOfferedInterface(RequestNotificationI.class);
+		
+		this.rddsdip = new RequestDispatcherDynamicStateDataInboundPort(requestDispatcherDynamicStateDataInboundPortURI,this);
+		this.addPort(this.rddsdip);
+		this.rddsdip.publishPort();
+		this.addOfferedInterface(ControlledDataOfferedI.ControlledPullI.class);
 
 		// Init elements to compute average
 		this.executionTimeRequest = new HashMap<>();
@@ -125,10 +127,10 @@ implements RequestSubmissionHandlerI,
 	}
 
 	public RequestDispatcher(final String requestSubmissionInboundPortURI ,
-			final String requestNotificationInboundPortURI, final String requestNotificationOutboundPortURI)
+			final String requestNotificationInboundPortURI, final String requestNotificationOutboundPortURI, final String requestDispatcherDynamicStateDataInboundPortURI)
 					throws Exception
 	{
-		this(AbstractPort.generatePortURI(), requestSubmissionInboundPortURI, requestNotificationInboundPortURI, requestNotificationOutboundPortURI);
+		this(AbstractPort.generatePortURI(), requestSubmissionInboundPortURI, requestNotificationInboundPortURI, requestNotificationOutboundPortURI,requestDispatcherDynamicStateDataInboundPortURI);
 	}
 	
 	public void associateVirtualMachine(final String virtualMachineRequestSubmissionInboundPortURI) throws Exception
@@ -249,7 +251,7 @@ implements RequestSubmissionHandlerI,
 	public RequestDispatcherDynamicStateI getDynamicState() throws Exception
 	{
 		++counterAvgRequest;
-		RequestDispatcherDynamicState rdds = new RequestDispatcherDynamicState(this.requestDispatcherUri, getAvg());
+		RequestDispatcherDynamicState rdds = new RequestDispatcherDynamicState(this.URI, getAvg());
 		
 		// Reset avg criteria each LIMIT_RESET_COUNTER_AVG times
 		if (counterAvgRequest % LIMIT_RESET_COUNTER_AVG == 0) {
@@ -274,7 +276,7 @@ implements RequestSubmissionHandlerI,
 	@Override
 	public String toString()
 	{
-		return "request dispatcher '" + requestDispatcherUri + "'";
+		return "request dispatcher '" + URI + "'";
 	}
 
 	/**
@@ -292,9 +294,9 @@ implements RequestSubmissionHandlerI,
 	 */
 	public void	sendDynamicState() throws Exception
 	{
-		if (this.requestDispatcherDynamicStateDataInboundPort.connected()) {
+		if (this.rddsdip.connected()) {
 			RequestDispatcherDynamicStateI rdds = this.getDynamicState() ;
-			this.requestDispatcherDynamicStateDataInboundPort.send(rdds) ;
+			this.rddsdip.send(rdds) ;
 		}
 	}
 
@@ -362,7 +364,7 @@ implements RequestSubmissionHandlerI,
 	{
 		assert n > 0;
 
-		this.logMessage(this.requestDispatcherUri + " startLimitedPushing with interval "
+		this.logMessage(this.URI + " startLimitedPushing with interval "
 									+ interval + " ms for " + n + " times.");
 
 		final RequestDispatcher rd = this;

@@ -8,6 +8,6 @@ extends DataOfferedI.DataI,
 		DataRequiredI.DataI
 {
 	
-	public double getExecutionTimeAvg();
+	public double getRequestExecutionTimeAverage();
 	
 }

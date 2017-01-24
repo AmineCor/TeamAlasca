@@ -9,6 +9,7 @@ import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestI;
 import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestSubmitterI;
 import com.teamalasca.admissioncontroller.ports.AdmissionNotificationOutboundPort;
 import com.teamalasca.admissioncontroller.ports.AdmissionRequestInboundPort;
+import com.teamalasca.autonomiccontroller.AutonomicController;
 import com.teamalasca.requestdispatcher.RequestDispatcher;
 
 import fr.upmc.components.AbstractComponent;
@@ -125,10 +126,6 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 				computerDynamicStateDataInboundPortURI,
 				ControlledDataConnector.class.getCanonicalName()) ;
 		this.cdsdop.startUnlimitedPushing(200);
-
-
-
-
 	}
 
 	@Override
@@ -249,14 +246,21 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 		//------------- Create the request dispatcher ------------------/
 
 
+		final String RDURI = AbstractPort.generatePortURI();
 		final String RDRequestNotificationInboundPortURI = AbstractPort.generatePortURI();
 		final String RDRequestSubmissionInboundPortURI = AbstractPort.generatePortURI();
 		final String RDRequestNotificationOutboundPortURI = AbstractPort.generatePortURI();
+		final String RDDynamicStateDataInboundPortURI = AbstractPort.generatePortURI();
 
-		final RequestDispatcher requestDispatcher = new RequestDispatcher(
+		final RequestDispatcher requestDispatcher = new RequestDispatcher(RDURI,
 				RDRequestSubmissionInboundPortURI,
 				RDRequestNotificationInboundPortURI,
-				RDRequestNotificationOutboundPortURI);
+				RDRequestNotificationOutboundPortURI,RDDynamicStateDataInboundPortURI);
+		
+		// -------- Create the autonomic controller to manage the request dispatcher ------/
+		
+		final AutonomicController autonomicController = new AutonomicController();
+		autonomicController.doConnectionWithRequestDispatcher(RDURI, RDDynamicStateDataInboundPortURI);
 
 
 		// ------- Connect the request dispatcher with the application virtual machine ------/

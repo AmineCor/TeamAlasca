@@ -32,7 +32,7 @@ implements AdmissionNotificationHandlerI, RequestNotificationHandlerI
 	AdmissionNotificationInboundPort anibp;
 	AdmissionRequestOutboundPort asop;
 
-	public RGApplication(String uri, AbstractCVM acvm) throws Exception
+	public RGApplication(String uri) throws Exception
 	{
 		super();
 
@@ -45,7 +45,6 @@ implements AdmissionNotificationHandlerI, RequestNotificationHandlerI
 				URI + "_rg_rsobp",
 				URI + "_rg_rnibp"
 		);
-		acvm.addDeployedComponent(rg);
 		
 		rg.toggleLogging();
 		rg.toggleTracing();
