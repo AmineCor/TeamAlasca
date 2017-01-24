@@ -84,7 +84,7 @@ implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
 	}
 
 	/** Connecting the autonomic controller with the request dispatcher */
-	private void doConnectionWithRequestDispatcher(final String requestDispatcherURI,final String requestDispatcherDynamicStateDataInboundPortURI) throws Exception
+	public void doConnectionWithRequestDispatcher(final String requestDispatcherURI,final String requestDispatcherDynamicStateDataInboundPortURI) throws Exception
 	{
 		this.requestDispatcherURI = requestDispatcherURI;
 		this.rddsdop = new RequestDispatcherDynamicStateDataOutboundPort(this, requestDispatcherURI);
@@ -111,7 +111,7 @@ implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
 				ControlledDataConnector.class.getCanonicalName()) ;
 		this.cdsdop.startUnlimitedPushing(200);
 	}
-	
+
 	@Override
 	public String toString()
 	{
@@ -136,7 +136,6 @@ implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
 			RequestDispatcherDynamicStateI currentDynamicState)
 					throws Exception
 	{
-
 		this.logMessage(this.toString() + "received a message from a dispatcher");
 
 		if(dispatcherURI != requestDispatcherURI) // data received from an unknown dispatcher
