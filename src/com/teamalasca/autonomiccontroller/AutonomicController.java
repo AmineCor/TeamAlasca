@@ -128,6 +128,8 @@ implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
 	public void acceptComputerDynamicData(String computerURI,
 			ComputerDynamicStateI currentDynamicState) throws Exception
 	{
+		this.logMessage(this.toString() + "received a message from a computer");
+
 		this.ressources = currentDynamicState.getCurrentCoreReservations();
 	}
 	
@@ -136,7 +138,7 @@ implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
 			RequestDispatcherDynamicStateI currentDynamicState)
 					throws Exception
 	{
-		this.logMessage(this.toString() + "received a message from a dispatcher");
+		this.logMessage(this.toString() + "received a message from a request dispatcher");
 
 		if(dispatcherURI != requestDispatcherURI) // data received from an unknown dispatcher
 			return;
