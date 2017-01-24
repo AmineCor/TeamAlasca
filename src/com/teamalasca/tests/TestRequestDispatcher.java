@@ -58,6 +58,7 @@ extends		AbstractCVM
 	public static final String RequestDispatcherRequestSubmissionInboundPortURI = "rd-rsip";
 	public static final String RequestDispatcherRequestNotificationInboundPortURI = "rd-rnip";
 	public static final String RequestDispatcherRequestNotificationOutboundPortURI = "rd-rnop";
+	public static final String RequestDispatcherDynamicStateDataInboundPortURI = "rd-dsdip";
 
 	// Request generator ports
 	public static final String	RequestGeneratorManagementInboundPortURI = "rg-mip" ;
@@ -246,7 +247,7 @@ extends		AbstractCVM
 		// --------------------------------------------------------------------
 		// Creating the requestDispatcher component.
 		// --------------------------------------------------------------------
-		requestDispatcher = new RequestDispatcher("rd1",RequestDispatcherRequestSubmissionInboundPortURI, RequestDispatcherRequestNotificationInboundPortURI, RequestDispatcherRequestNotificationOutboundPortURI);
+		requestDispatcher = new RequestDispatcher("rd1",RequestDispatcherRequestSubmissionInboundPortURI, RequestDispatcherRequestNotificationInboundPortURI, RequestDispatcherRequestNotificationOutboundPortURI,RequestDispatcherDynamicStateDataInboundPortURI);
 
 		// Associating 3 VMs to the request dispatcher
 		requestDispatcher.associateVirtualMachine(VirtualMachineRequestSubmissionInboundPortURI1);
