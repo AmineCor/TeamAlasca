@@ -47,7 +47,6 @@ extends		AbstractCVM
 	// Admission controller ports
 	private static final String AdmissionControllerAdmissionRequestInboundPortURI = "ac-arip";
 	private static final String AdmissionControllerAdmissionNotifiationOutboundPortURI = "ac-anop";
-	private static final String AdmissionControllerComputerServiceOutboundPortURI = "ac-csop";
 	private static final String AdmissionControllerComputerDynamicStateDataInboundPortURI = "ac-cdsdip";
 
 	// Virtual machines ports
@@ -178,13 +177,11 @@ extends		AbstractCVM
 
 		admissionController  = new AdmissionController("ad1",
 				AdmissionControllerAdmissionRequestInboundPortURI,
-				AdmissionControllerAdmissionNotifiationOutboundPortURI,
-				AdmissionControllerComputerServiceOutboundPortURI,
-				AdmissionControllerComputerDynamicStateDataInboundPortURI);
+				AdmissionControllerAdmissionNotifiationOutboundPortURI);
 
 		this.addDeployedComponent(admissionController);
 
-		admissionController.doConnectionWithComputer(computerURI, ComputerServicesInboundPortURI,ComputerDynamicStateDataInboundPortURI);
+		admissionController.doConnectionWithComputer(computerURI, ComputerServicesInboundPortURI, AdmissionControllerComputerDynamicStateDataInboundPortURI);
 		admissionController.toggleLogging();
 		admissionController.toggleTracing();
 

@@ -15,19 +15,12 @@ import com.teamalasca.requestdispatcher.RequestDispatcher;
 import fr.upmc.components.AbstractComponent;
 import fr.upmc.components.ports.AbstractPort;
 import fr.upmc.datacenter.connectors.ControlledDataConnector;
-import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
-import fr.upmc.datacenter.hardware.computers.connectors.ComputerServicesConnector;
 import fr.upmc.datacenter.hardware.computers.interfaces.ComputerDynamicStateI;
-import fr.upmc.datacenter.hardware.computers.interfaces.ComputerServicesI;
 import fr.upmc.datacenter.hardware.computers.interfaces.ComputerStateDataConsumerI;
 import fr.upmc.datacenter.hardware.computers.interfaces.ComputerStaticStateI;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerDynamicStateDataOutboundPort;
-import fr.upmc.datacenter.hardware.computers.ports.ComputerServicesOutboundPort;
 import fr.upmc.datacenter.interfaces.ControlledDataRequiredI;
-import fr.upmc.datacenter.software.applicationvm.ApplicationVM;
-import fr.upmc.datacenter.software.applicationvm.connectors.ApplicationVMManagementConnector;
 import fr.upmc.datacenter.software.applicationvm.ports.ApplicationVMManagementOutboundPort;
-import fr.upmc.datacenter.software.connectors.RequestNotificationConnector;
 
 /**
  * An admission controller is a component receiving admission requests from applications
@@ -40,6 +33,14 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 
 	/** Internal URI for debug purpose */
 	private final String URI;
+	
+	private String computerURI;
+	
+	/** */
+	private String computerServiceInboundPortURI;
+	
+	private String computerDynamicStateDataInboundPortURI;
+
 
 	/** Outbound port of the admission controller sending admissions notifications */
 	private final AdmissionNotificationOutboundPort anop;
@@ -47,11 +48,8 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 	/** Inbound port of the admission controller receiving admission requests from applications */
 	private final AdmissionRequestInboundPort asibp;
 
-	/** Outbound port connected to the computer component to access its services.	*/
-	private final ComputerServicesOutboundPort csop ;
-
 	/** Outbound port connected to the computer component to receive its data */
-	private ComputerDynamicStateDataOutboundPort cdsdop ;
+	private ComputerDynamicStateDataOutboundPort cdsdop;
 
 	/** Internal port to manage the application virtual machines allocated. In specially, allocate its cores */
 	private ApplicationVMManagementOutboundPort avmmop;
@@ -61,13 +59,18 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 
 	public AdmissionController(final String admissionControllerURI,
 			final String admissionRequestInboundPortURI,
-			final String admissionNotifiationOutboundPortURI,
-			final String computerServiceOutboundPortURI,
-			final String computerDynamicStateDataInboundPortURI) throws Exception {
-
-		super();
+			final String admissionNotifiationOutboundPortURI) throws Exception
+	{
+		super(1, 1);
+		
+		// Preconditions
+		assert admissionControllerURI != null;
+		assert admissionRequestInboundPortURI != null;
+		assert admissionNotifiationOutboundPortURI != null;
+		assert computerURI != null;
+		assert computerDynamicStateDataInboundPortURI != null;
+		
 		this.URI=admissionControllerURI;
-
 
 		// create port receiving admission request from applications
 		this.asibp = new AdmissionRequestInboundPort(admissionRequestInboundPortURI,this);
@@ -81,12 +84,6 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 		this.addPort(anop);
 		this.anop.publishPort();
 
-		// create port to access computer services
-		this.csop = new ComputerServicesOutboundPort(computerServiceOutboundPortURI,this) ;
-		this.addRequiredInterface(ComputerServicesI.class);
-		this.addPort(this.csop);
-		this.csop.publishPort() ;
-
 		// create a mock up port to manage the application virtual machine (allocate cores).
 		avmmop = new ApplicationVMManagementOutboundPort(
 				AbstractPort.generatePortURI(),
@@ -99,23 +96,19 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 
 	public AdmissionController(
 			final String admissionRequestInboundPortURI,
-			final String admissionNotifiationOutboundPortURI,
-			final String computerServiceOutboundPortURI,
-			final String computerDynamicStateDataInboundPortURI) throws Exception {
-
-		this(AbstractPort.generatePortURI(), admissionRequestInboundPortURI, admissionNotifiationOutboundPortURI, computerServiceOutboundPortURI, computerDynamicStateDataInboundPortURI);
-
+			final String admissionNotifiationOutboundPortURI) throws Exception
+	{
+		this(AbstractPort.generatePortURI(), admissionRequestInboundPortURI, admissionNotifiationOutboundPortURI);
 	}
 
-	
 
 	/** Connecting the admission controller with a computer component */
-	public void doConnectionWithComputer(final String computerURI,final String computerServicesInboundPortURI,final String computerDynamicStateDataInboundPortURI) throws Exception{
-
-		this.csop.doConnection(
-				computerServicesInboundPortURI,
-				ComputerServicesConnector.class.getCanonicalName());
-
+	public void doConnectionWithComputer(final String computerURI, final String computerServiceInboundPortURI, final String computerDynamicStateDataInboundPortURI) throws Exception
+	{
+		this.computerURI = computerURI;
+		this.computerServiceInboundPortURI = computerServiceInboundPortURI;
+		this.computerDynamicStateDataInboundPortURI = computerDynamicStateDataInboundPortURI;
+		
 		// create port to receive computer data
 		this.cdsdop = new ComputerDynamicStateDataOutboundPort(this, computerURI);
 		this.addPort(cdsdop) ;
@@ -132,33 +125,15 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 	public void acceptComputerDynamicData(String computerURI, ComputerDynamicStateI currentDynamicState)
 			throws Exception 
 	{
-
 		synchronized (ressources)
 		{
 			ressources = currentDynamicState.getCurrentCoreReservations();
 		}
-
-		//TODO remove these logs
-		StringBuffer sb = new StringBuffer("");
-		for (int p = 0 ; p < ressources.length ; p++) {
-			if (p == 0) {
-				sb.append("  reserved cores           : ") ;
-			} else {
-				sb.append("                             ") ;
-			}
-			for (int c = 0 ; c < ressources[p].length ; c++) {
-				if (ressources[p][c]) {
-					sb.append("t ") ;
-				} else {
-					sb.append("f ") ;
-				}
-			}
-		}
-		logMessage(sb.toString());
 	}
 
 	@Override
-	public void handleAdmissionRequest(AdmissionRequestI request) throws Exception {
+	public void handleAdmissionRequest(AdmissionRequestI request) throws Exception
+	{
 
 		logMessage(this.toString()+" receive an admission request from app(uri:"+request.getApplicationURI()+")");
 
@@ -169,15 +144,14 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 	}
 
 	@Override
-	public void handleAdmissionRequestAndNotify(AdmissionRequestI request) throws Exception {
-
+	public void handleAdmissionRequestAndNotify(AdmissionRequestI request) throws Exception
+	{
 		this.handleAdmissionRequest(request);
 
 		// perform the notification
 		anop.doConnection(request.getApplicationAdmissionNotificationInboundPortURI(),AdmissionNotificationConnector.class.getCanonicalName());			
 		anop.acceptAdmissionNotification(request);
 		anop.doDisconnection();
-
 	}
 
 	/**
@@ -185,43 +159,41 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 	 */
 	private boolean hasEnoughResources(int requestedCoreNumber)
 	{
-
 		synchronized(ressources){
-
 			int count = 0;
 			for (int i=0; i< ressources.length; i++)
 			{
 				for (int j=0; j<ressources[i].length; j++)
 				{
-					if (!ressources[i][j]) count++;
+					if (!ressources[i][j]) {
+						count++;
+					}
 				}
 			}
-			return (count>=requestedCoreNumber);
+			return count>=requestedCoreNumber;
 		}
-
 	}
 
-	private void acceptAdmissionRequest(AdmissionRequestI request) throws Exception {
-
-		allocateRessources(request);
+	private void acceptAdmissionRequest(AdmissionRequestI request) throws Exception
+	{
+		createComponents(request);
 		request.acceptRequest();
 
 		logMessage(this.toString()+" accept the admission of app(uri:"+request.getApplicationURI()+")");
 	}
 
-	private void refuseAdmissionRequest(AdmissionRequestI request) throws Exception {
-
+	private void refuseAdmissionRequest(AdmissionRequestI request) throws Exception
+	{
 		request.refuseRequest();
 
 		logMessage(this.toString()+" refuse the admission of app(uri:"+request.getApplicationURI()+")");
 	}
 
-	private void allocateRessources(AdmissionRequestI request) throws Exception
+	// TODO rename this method
+	private void createComponents(AdmissionRequestI request) throws Exception
 	{
-
-
 		//------------- Create the application virtual machine ------------------/
-
+/*
 		final String applicationVMURI = request.getApplicationURI() + "_vm";
 
 		final String AVMApplicationVMManagementInboundPortURI = AbstractPort.generatePortURI();
@@ -240,11 +212,10 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 
 		this.avmmop.allocateCores(ac) ;
 		this.avmmop.doDisconnection();
+*/
 
 
-
-		//------------- Create the request dispatcher ------------------/
-
+		// ------------- Create the request dispatcher ------------------/
 
 		final String RDURI = AbstractPort.generatePortURI();
 		final String RDRequestNotificationInboundPortURI = AbstractPort.generatePortURI();
@@ -252,26 +223,41 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 		final String RDRequestNotificationOutboundPortURI = AbstractPort.generatePortURI();
 		final String RDDynamicStateDataInboundPortURI = AbstractPort.generatePortURI();
 
-		final RequestDispatcher requestDispatcher = new RequestDispatcher(RDURI,
+		final RequestDispatcher rd = new RequestDispatcher(RDURI,
 				RDRequestSubmissionInboundPortURI,
 				RDRequestNotificationInboundPortURI,
 				RDRequestNotificationOutboundPortURI,RDDynamicStateDataInboundPortURI);
 		
-		// -------- Create the autonomic controller to manage the request dispatcher ------/
+		// -------- Create the autonomic controller to manage the request dispatcher and connect them ------/
+		final AutonomicController ac = new AutonomicController(computerServiceInboundPortURI,
+				computerURI,
+				computerDynamicStateDataInboundPortURI,
+				RDURI,
+				RDDynamicStateDataInboundPortURI);
 		
-		final AutonomicController autonomicController = new AutonomicController();
-		autonomicController.doConnectionWithRequestDispatcher(RDURI, RDDynamicStateDataInboundPortURI);
+		// TODO cige yves saint laurent
+		// Active tracing and logging
+		if (isTracing()) {
+			ac.toggleTracing();
+			rd.toggleTracing();
+		}
+		
+		if (isLogging()) {
+			ac.toggleLogging();
+			rd.toggleLogging();
+		}
 
 
 		// ------- Connect the request dispatcher with the application virtual machine ------/
-
+/*
 		requestDispatcher.associateVirtualMachine(AVMRequestSubmissionInboundPortURI);
 
 		applicationVM.findPortFromURI(AVMRequestNotificationOutboundPortURI)
 		.doConnection
 		(RDRequestNotificationInboundPortURI,
 				RequestNotificationConnector.class.getCanonicalName());
-
+*/
+		
 		// -------- Port URI's are shared through the request ------/
 
 		request.setRequestSubmissionInboundPortURI(RDRequestSubmissionInboundPortURI);
@@ -279,16 +265,15 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 	}
 
 	@Override
-	public String toString() {
+	public String toString()
+	{
 		return "admission controller '"+this.URI+"'";
 	}
 
 	@Override
 	public void acceptComputerStaticData(String computerURI,
-			ComputerStaticStateI staticState) throws Exception {
-
-		//TODO handle static data received
+			ComputerStaticStateI staticState) throws Exception
+	{
 		logMessage("recevied static data");
-
 	}
 }
