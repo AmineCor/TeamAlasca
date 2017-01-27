@@ -8,12 +8,12 @@ import java.util.Set;
 
 import com.teamalasca.admissioncontroller.AdmissionController;
 import com.teamalasca.application.RGApplication;
+import com.teamalasca.computer.Computer;
 
 import fr.upmc.components.AbstractComponent;
 import fr.upmc.components.connectors.DataConnector;
 import fr.upmc.components.cvm.AbstractCVM;
 import fr.upmc.datacenter.connectors.ControlledDataConnector;
-import fr.upmc.datacenter.hardware.computers.Computer;
 import fr.upmc.datacenter.hardware.computers.connectors.ComputerServicesConnector;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerDynamicStateDataOutboundPort;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerServicesOutboundPort;
@@ -43,6 +43,7 @@ extends		AbstractCVM
 	public static final String	ComputerStaticStateDataOutboundPortURI = "css-dop" ;
 	public static final String	ComputerDynamicStateDataInboundPortURI = "cds-dip" ;
 	public static final String	ComputerDynamicStateDataOutboundPortURI = "cds-dop" ;
+	public static final String	ComputerManageCoreInboundPortURI = "cmc-ib" ;
 
 	// Admission controller ports
 	private static final String AdmissionControllerAdmissionRequestInboundPortURI = "ac-arip";
@@ -127,7 +128,8 @@ extends		AbstractCVM
 				numberOfCores,
 				ComputerServicesInboundPortURI,
 				ComputerStaticStateDataInboundPortURI,
-				ComputerDynamicStateDataInboundPortURI) ;
+				ComputerDynamicStateDataInboundPortURI,
+				ComputerManageCoreInboundPortURI) ;
 		this.addDeployedComponent(c) ;
 
 		// Create a mock-up computer services port to later allocate its cores
@@ -180,7 +182,7 @@ extends		AbstractCVM
 
 		this.addDeployedComponent(admissionController);
 
-		admissionController.doConnectionWithComputer(computerURI, ComputerServicesInboundPortURI, ComputerDynamicStateDataInboundPortURI);
+		admissionController.doConnectionWithComputer(computerURI, ComputerManageCoreInboundPortURI, ComputerDynamicStateDataInboundPortURI);
 		admissionController.toggleLogging();
 		admissionController.toggleTracing();
 

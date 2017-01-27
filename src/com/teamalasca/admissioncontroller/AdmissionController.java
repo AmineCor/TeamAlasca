@@ -36,8 +36,7 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 	
 	private String computerURI;
 	
-	/** */
-	private String computerServiceInboundPortURI;
+	private String manageCoreInboundPortURI;
 	
 	private String computerDynamicStateDataInboundPortURI;
 
@@ -103,10 +102,10 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 
 
 	/** Connecting the admission controller with a computer component */
-	public void doConnectionWithComputer(final String computerURI, final String computerServiceInboundPortURI, final String computerDynamicStateDataInboundPortURI) throws Exception
+	public void doConnectionWithComputer(final String computerURI, final String manageCoreInboundPortURI, final String computerDynamicStateDataInboundPortURI) throws Exception
 	{
 		this.computerURI = computerURI;
-		this.computerServiceInboundPortURI = computerServiceInboundPortURI;
+		this.manageCoreInboundPortURI = manageCoreInboundPortURI;
 		this.computerDynamicStateDataInboundPortURI = computerDynamicStateDataInboundPortURI;
 		
 		// create port to receive computer data
@@ -229,9 +228,10 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 				RDRequestNotificationOutboundPortURI,RDDynamicStateDataInboundPortURI);
 		
 		// -------- Create the autonomic controller to manage the request dispatcher and connect them ------/
-		final AutonomicController ac = new AutonomicController(computerServiceInboundPortURI,
+		final AutonomicController ac = new AutonomicController(
 				computerURI,
 				computerDynamicStateDataInboundPortURI,
+				manageCoreInboundPortURI,
 				RDURI,
 				RDDynamicStateDataInboundPortURI);
 		
