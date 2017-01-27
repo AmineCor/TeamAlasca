@@ -10,37 +10,39 @@ import com.teamalasca.requestdispatcher.interfaces.RequestDispatcherStateDataCon
 
 import fr.upmc.components.AbstractComponent;
 import fr.upmc.components.ComponentI;
+import fr.upmc.components.ports.AbstractPort;
+import fr.upmc.datacenter.software.applicationvm.ApplicationVM;
 
 public class AutonomicControllerArthur
 extends AbstractComponent
 implements RequestDispatcherStateDataConsumerI
 {
-	
+
 	/** A private URI to identify this autonomic controller, for debug purpose*/
 	private final String URI;
-	
+
 	private String acServicesInboundPortURI;
-	
+
 	private List<Double> avgList;
 	private final static int LIMIT_SIZE_AVG_LIST = 3;
-	
+
 	private static final double THRESHOLD = 3000.0;
 	private static final double THRESHOLD_FREQUENCY = 0.20;
 	private static final double THRESHOLD_CORE = 0.40;
 	private static final double THRESHOLD_VM = 0.80;
 
 	private static final int interval = 30000;
-	
+
 	protected ScheduledFuture<?> pushingFuture;
 
 	public AutonomicControllerArthur(String acURI, String acServicesInboundPortURI) throws Exception
 	{
 		super(1, 1);
-		
+
 		// Preconditions
 		assert acURI != null;
 		assert acServicesInboundPortURI != null;
-		
+
 		this.URI = acURI;
 		this.acServicesInboundPortURI = acServicesInboundPortURI;
 		this.avgList = new ArrayList<>();
@@ -50,19 +52,19 @@ implements RequestDispatcherStateDataConsumerI
 	@Override
 	public void acceptRequestDispatcherDynamicData(String dispatcherURI,
 			RequestDispatcherDynamicStateI currentDynamicState)
-			throws Exception
+					throws Exception
 	{
 		synchronized (avgList) {
 			// Add the average we just received
 			this.avgList.add(currentDynamicState.getRequestExecutionTimeAverage());
-			
+
 			// For moving average, we only need 3 values
 			if (avgList.size() > LIMIT_SIZE_AVG_LIST) {
 				avgList.remove(0);
 			}	
 		}
 	}
-	
+
 	public Double computeMovingAverage()
 	{
 		synchronized (avgList) {
@@ -70,7 +72,7 @@ implements RequestDispatcherStateDataConsumerI
 			if (avgList.isEmpty()) {
 				return null;
 			}
-			
+
 			// Compute moving average
 			double result = 0;
 			for (double i : avgList)
@@ -78,12 +80,12 @@ implements RequestDispatcherStateDataConsumerI
 				result += i;
 			}
 			result = result / avgList.size();
-			
+
 			logMessage("AutonomicControler : Moving average = " + result);
 			return result;
 		}
 	}
-	
+
 	public void scheduleComputeAverage() throws Exception
 	{
 		this.pushingFuture =
@@ -94,35 +96,35 @@ implements RequestDispatcherStateDataConsumerI
 								try {
 									Double movingAvg = computeMovingAverage();
 									//LinkedList<InfoVM> infos  = null;
-									
+
 									// 
 									if (movingAvg != null) {
 										//infos = (LinkedList<InfoVM>)infosVM.clone();
-										
-										
-	//									for (InfoVM info : infos) {
-	//										info.print();
-	//									}
-	
+
+
+										//									for (InfoVM info : infos) {
+										//										info.print();
+										//									}
+
 										// We are above the THRESHOLD
 										if (movingAvg > THRESHOLD) {
 											// Allocate VM
 											if (movingAvg > THRESHOLD * (1 + THRESHOLD_VM)) {
 												logMessage("AutonomicController : Allocate VM");
 
-											 //   allocateVM();			
+												//   allocateVM();			
 											}
 											// Allocate core
 											else if (movingAvg > THRESHOLD * (1 + THRESHOLD_CORE)) {
 												logMessage("AutonomicController : Allocate core");
 
-											  //   allocateCore(getLessEffectiveVM(infos));
+												//   allocateCore(getLessEffectiveVM(infos));
 											}
 											// Increase frequency
 											else if (movingAvg > THRESHOLD * (1 + THRESHOLD_FREQUENCY)) {
 												logMessage("AutonomicController : Increase frequency");
 
-										        // changeFrequency(getLessEffectiveVM(infos),Frequency.up);
+												// changeFrequency(getLessEffectiveVM(infos),Frequency.up);
 											}
 											// In other case do nothing
 											else {
@@ -134,24 +136,24 @@ implements RequestDispatcherStateDataConsumerI
 											if (movingAvg <= THRESHOLD * (1 - THRESHOLD_VM)) {
 												logMessage("AutonomicController : Release VM");
 
-										          //releaseVM(getMostEffectiveVM(infos));
+												//releaseVM(getMostEffectiveVM(infos));
 											}
 											// Release core
 											else if (movingAvg <= THRESHOLD * (1 - THRESHOLD_CORE)) {
 												logMessage("AutonomicController : Release core");
 
-												  //releaseCore(getMostEffectiveVM(infos));
+												//releaseCore(getMostEffectiveVM(infos));
 											}
 											// Decrease frequency
 											else if (movingAvg <= THRESHOLD * (1 - THRESHOLD_FREQUENCY)) {
 												logMessage("AutonomicController : Decrease frequency");
 
-												  //changeFrequency(getMostEffectiveVM(infos),Frequency.down);
+												//changeFrequency(getMostEffectiveVM(infos),Frequency.down);
 											}
 											/* In other case do nothing
 											else {
 											}
-											*/
+											 */
 										}
 									}
 								}
@@ -168,7 +170,29 @@ implements RequestDispatcherStateDataConsumerI
 							}
 						}, interval, TimeUnit.MILLISECONDS) ;
 	}
-	
+
+	private void createVirtualMachine(){
+		//------------- Create the application virtual machine ------------------/
+
+		final String AVMApplicationVMManagementInboundPortURI = AbstractPort.generatePortURI();
+		final String AVMRequestSubmissionInboundPortURI = AbstractPort.generatePortURI();
+		final String AVMRequestNotificationOutboundPortURI = AbstractPort.generatePortURI();
+
+		final ApplicationVM applicationVM = new ApplicationVM(AbstractPort.generatePortURI(),
+				AVMApplicationVMManagementInboundPortURI,
+				AVMRequestSubmissionInboundPortURI,
+				AVMRequestNotificationOutboundPortURI);
+
+		// allocate its cores
+		AllocatedCore[] ac = this.csop.allocateCores(CORES_NUMBER_THRESHOLD) ;
+
+		this.avmmop.doConnection(AVMApplicationVMManagementInboundPortURI, ApplicationVMManagementConnector.class.getCanonicalName());
+
+		this.avmmop.allocateCores(ac) ;
+		this.avmmop.doDisconnection();
+
+	}
+
 	@Override
 	public String toString() {
 		return "autonomic controller '"+this.URI+"'";

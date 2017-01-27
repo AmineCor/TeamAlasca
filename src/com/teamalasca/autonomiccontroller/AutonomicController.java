@@ -13,6 +13,7 @@ import com.teamalasca.requestdispatcher.ports.RequestDispatcherDynamicStateDataO
 import fr.upmc.components.AbstractComponent;
 import fr.upmc.components.ports.AbstractPort;
 import fr.upmc.datacenter.connectors.ControlledDataConnector;
+import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
 import fr.upmc.datacenter.hardware.computers.connectors.ComputerServicesConnector;
 import fr.upmc.datacenter.hardware.computers.interfaces.ComputerDynamicStateI;
 import fr.upmc.datacenter.hardware.computers.interfaces.ComputerServicesI;
@@ -21,11 +22,15 @@ import fr.upmc.datacenter.hardware.computers.interfaces.ComputerStaticStateI;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerDynamicStateDataOutboundPort;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerServicesOutboundPort;
 import fr.upmc.datacenter.interfaces.ControlledDataRequiredI;
+import fr.upmc.datacenter.software.applicationvm.ApplicationVM;
+import fr.upmc.datacenter.software.applicationvm.connectors.ApplicationVMManagementConnector;
+import fr.upmc.datacenter.software.applicationvm.ports.ApplicationVMManagementOutboundPort;
 
 public final class AutonomicController extends AbstractComponent
 implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
 
 	private final static int MAX_SIZE_AVERAGE_LIST = 3;
+	private final static int DEFAULT_CORE_NUMBER = 4;
 
 	/** A private URI to identify this autonomic controller, for debug purpose */
 	private final String URI;
@@ -42,8 +47,11 @@ implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
 	/** Outbound port connected to the computer to manage its cores **/
 	private ManageCoreOutboundPort mcop ;
 
+	/** Internal port to manage the application virtual machines allocated. In specially, allocate its cores */
+	private ApplicationVMManagementOutboundPort avmmop;
+
 	private List<Double> requestExecutionAverages;
-	
+
 	private Actuator actuator;
 
 	private boolean[][] ressources;
@@ -53,7 +61,8 @@ implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
 			final String computerDynamicStateDataInboundPortURI,
 			final String manageCoreInboundPortURI,
 			final String requestDispatcherURI,
-			final String requestDispatcherDynamicStateDataInboundPortURI) throws Exception
+			final String requestDispatcherDynamicStateDataInboundPortURI,
+			final String applicationVMManagementInboundPortURI) throws Exception
 	{
 		super(1, 1);
 
@@ -61,37 +70,56 @@ implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
 		requestExecutionAverages = new ArrayList<>();
 		actuator = new Actuator();
 
-		/*// create port to access computer services
-		this.csop = new ComputerServicesOutboundPort(this) ;
-		this.addRequiredInterface(ComputerServicesI.class);
-		this.addPort(this.csop);
-		this.csop.publishPort() ;
-		this.csop.doConnection(computerServiceInboundPortURI, ComputerServicesConnector.class.getCanonicalName());*/
+		// create port to manage the application vm associated with the request dispatcher
+		this.avmmop = new ApplicationVMManagementOutboundPort(
+				AbstractPort.generatePortURI(),
+				this);
+		this.addPort(avmmop);
+		this.avmmop.publishPort();
+		this.avmmop.doConnection(applicationVMManagementInboundPortURI, ApplicationVMManagementConnector.class.getCanonicalName());
+
+		// create port to receive computer data
+		this.cdsdop = new ComputerDynamicStateDataOutboundPort(this, computerURI);
+		this.addPort(cdsdop) ;
+		this.cdsdop.publishPort() ;
+		this.addRequiredInterface(ControlledDataRequiredI.ControlledPullI.class) ;
+
+		// create port to allocate and manage computer cores
+		this.mcop = new ManageCoreOutboundPort(this);
+		this.addRequiredInterface(CoreManager.class);
+		this.addPort(this.mcop);
+		this.mcop.publishPort();
+
+		// create port to receive requests execution time from the request dispatcher
+		this.rddsdop = new RequestDispatcherDynamicStateDataOutboundPort(this, requestDispatcherURI);
+		this.addPort(rddsdop);
+		this.rddsdop.publishPort();
+		this.addRequiredInterface(ControlledDataRequiredI.ControlledPullI.class) ;
 
 		// Connect the Request Dispatcher and the Autonomic Controller
 		doConnectionWithRequestDispatcher(requestDispatcherURI, requestDispatcherDynamicStateDataInboundPortURI);
 
 		// create port to receive computer data
-		doConnectionWithComputer(computerURI, computerDynamicStateDataInboundPortURI,manageCoreInboundPortURI);		
+		doConnectionWithComputer(computerURI, computerDynamicStateDataInboundPortURI,manageCoreInboundPortURI);	
+
+		// Allocate cores to application vm
+		initCores();
 	}
-	
+
 	public AutonomicController(
 			final String computerURI,
 			final String computerDynamicStateDataInboundPortURI,
 			final String manageCoreInboundPortURI,
 			final String requestDispatcherURI,
-			final String requestDispatcherDynamicStateDataInboundPortURI) throws Exception{
-		this(AbstractPort.generatePortURI(), computerURI, computerDynamicStateDataInboundPortURI, manageCoreInboundPortURI, requestDispatcherURI, requestDispatcherDynamicStateDataInboundPortURI);
+			final String requestDispatcherDynamicStateDataInboundPortURI,
+			final String applicationVMManagementInboundPortURI) throws Exception{
+		this(AbstractPort.generatePortURI(), computerURI, computerDynamicStateDataInboundPortURI, manageCoreInboundPortURI, requestDispatcherURI, requestDispatcherDynamicStateDataInboundPortURI,applicationVMManagementInboundPortURI);
 	}
 
 	/** Connecting the autonomic controller with the request dispatcher */
 	public void doConnectionWithRequestDispatcher(final String requestDispatcherURI,final String requestDispatcherDynamicStateDataInboundPortURI) throws Exception
 	{
 		this.requestDispatcherURI = requestDispatcherURI;
-		this.rddsdop = new RequestDispatcherDynamicStateDataOutboundPort(this, requestDispatcherURI);
-		this.addPort(rddsdop);
-		this.rddsdop.publishPort();
-		this.addRequiredInterface(ControlledDataRequiredI.ControlledPullI.class) ;
 		this.rddsdop.doConnection(
 				requestDispatcherDynamicStateDataInboundPortURI,
 				ControlledDataConnector.class.getCanonicalName());
@@ -101,23 +129,12 @@ implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
 	/** Connecting the admission controller with ports of a computer component */
 	private void doConnectionWithComputer(final String computerURI, final String computerDynamicStateDataInboundPortURI,final String manageCoreInboundPortURI) throws Exception
 	{
-
-		// create port to receive computer data
-		this.cdsdop = new ComputerDynamicStateDataOutboundPort(this, computerURI);
-		this.addPort(cdsdop) ;
-		this.cdsdop.publishPort() ;
-		this.addRequiredInterface(ControlledDataRequiredI.ControlledPullI.class) ;
 		this.cdsdop.
 		doConnection(
 				computerDynamicStateDataInboundPortURI,
 				ControlledDataConnector.class.getCanonicalName()) ;
 		this.cdsdop.startUnlimitedPushing(200);
 
-		// create port to allocate and manage computer cores
-		this.mcop = new ManageCoreOutboundPort(this);
-		this.addRequiredInterface(CoreManager.class);
-		this.addPort(this.mcop);
-		this.mcop.publishPort();
 		this.mcop.doConnection(manageCoreInboundPortURI, ManageCoreConnector.class.getCanonicalName());
 	}
 
@@ -160,11 +177,17 @@ implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
 				requestExecutionAverages.remove(0);
 			}
 		}
-		
+
 		this.actuator.adaptRessources(mcop, computeMovingAverage());
-		
+
 	}
-	
+
+	private void initCores() throws Exception{
+		// allocate its cores
+		AllocatedCore[] ac = this.mcop.allocateCores(DEFAULT_CORE_NUMBER);
+		this.avmmop.allocateCores(ac) ;
+	}
+
 	public Double computeMovingAverage()
 	{
 		synchronized (requestExecutionAverages) {
@@ -172,7 +195,7 @@ implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
 			if (requestExecutionAverages.isEmpty()) {
 				return null;
 			}
-			
+
 			// Compute moving average
 			double result = 0;
 			for (double i : requestExecutionAverages)
@@ -180,7 +203,7 @@ implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
 				result += i;
 			}
 			result = result / requestExecutionAverages.size();
-			
+
 			logMessage(this.toString() + " Moving average = " + result);
 			return result;
 		}

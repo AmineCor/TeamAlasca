@@ -20,6 +20,7 @@ import fr.upmc.datacenter.hardware.computers.interfaces.ComputerStateDataConsume
 import fr.upmc.datacenter.hardware.computers.interfaces.ComputerStaticStateI;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerDynamicStateDataOutboundPort;
 import fr.upmc.datacenter.interfaces.ControlledDataRequiredI;
+import fr.upmc.datacenter.software.applicationvm.ApplicationVM;
 import fr.upmc.datacenter.software.applicationvm.ports.ApplicationVMManagementOutboundPort;
 
 /**
@@ -33,11 +34,11 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 
 	/** Internal URI for debug purpose */
 	private final String URI;
-	
+
 	private String computerURI;
-	
+
 	private String manageCoreInboundPortURI;
-	
+
 	private String computerDynamicStateDataInboundPortURI;
 
 
@@ -50,9 +51,6 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 	/** Outbound port connected to the computer component to receive its data */
 	private ComputerDynamicStateDataOutboundPort cdsdop;
 
-	/** Internal port to manage the application virtual machines allocated. In specially, allocate its cores */
-	private ApplicationVMManagementOutboundPort avmmop;
-
 
 	private boolean[][] ressources;
 
@@ -61,14 +59,14 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 			final String admissionNotifiationOutboundPortURI) throws Exception
 	{
 		super(1, 1);
-		
+
 		// Preconditions
 		assert admissionControllerURI != null;
 		assert admissionRequestInboundPortURI != null;
 		assert admissionNotifiationOutboundPortURI != null;
 		assert computerURI != null;
 		assert computerDynamicStateDataInboundPortURI != null;
-		
+
 		this.URI=admissionControllerURI;
 
 		// create port receiving admission request from applications
@@ -82,13 +80,6 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 		this.addRequiredInterface(AdmissionNotificationI.class);
 		this.addPort(anop);
 		this.anop.publishPort();
-
-		// create a mock up port to manage the application virtual machine (allocate cores).
-		avmmop = new ApplicationVMManagementOutboundPort(
-				AbstractPort.generatePortURI(),
-				this);
-		this.addPort(avmmop);
-		avmmop.publishPort();
 
 		ressources = new boolean[0][0];
 	}
@@ -107,7 +98,7 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 		this.computerURI = computerURI;
 		this.manageCoreInboundPortURI = manageCoreInboundPortURI;
 		this.computerDynamicStateDataInboundPortURI = computerDynamicStateDataInboundPortURI;
-		
+
 		// create port to receive computer data
 		this.cdsdop = new ComputerDynamicStateDataOutboundPort(this, computerURI);
 		this.addPort(cdsdop) ;
@@ -191,28 +182,17 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 	// TODO rename this method
 	private void createComponents(AdmissionRequestI request) throws Exception
 	{
+
 		//------------- Create the application virtual machine ------------------/
-/*
-		final String applicationVMURI = request.getApplicationURI() + "_vm";
 
 		final String AVMApplicationVMManagementInboundPortURI = AbstractPort.generatePortURI();
 		final String AVMRequestSubmissionInboundPortURI = AbstractPort.generatePortURI();
 		final String AVMRequestNotificationOutboundPortURI = AbstractPort.generatePortURI();
 
-		final ApplicationVM applicationVM = new ApplicationVM(applicationVMURI,
+		final ApplicationVM vm = new ApplicationVM(AbstractPort.generatePortURI(),
 				AVMApplicationVMManagementInboundPortURI,
 				AVMRequestSubmissionInboundPortURI,
 				AVMRequestNotificationOutboundPortURI);
-
-		// allocate its cores
-		AllocatedCore[] ac = this.csop.allocateCores(CORES_NUMBER_THRESHOLD) ;
-
-		this.avmmop.doConnection(AVMApplicationVMManagementInboundPortURI, ApplicationVMManagementConnector.class.getCanonicalName());
-
-		this.avmmop.allocateCores(ac) ;
-		this.avmmop.doDisconnection();
-*/
-
 
 		// ------------- Create the request dispatcher ------------------/
 
@@ -227,37 +207,42 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 				RDRequestNotificationInboundPortURI,
 				RDRequestNotificationOutboundPortURI,RDDynamicStateDataInboundPortURI);
 		
+		rd.associateVirtualMachine(AVMRequestSubmissionInboundPortURI);
+
 		// -------- Create the autonomic controller to manage the request dispatcher and connect them ------/
 		final AutonomicController ac = new AutonomicController(
 				computerURI,
 				computerDynamicStateDataInboundPortURI,
 				manageCoreInboundPortURI,
 				RDURI,
-				RDDynamicStateDataInboundPortURI);
-		
+				RDDynamicStateDataInboundPortURI,
+				AVMApplicationVMManagementInboundPortURI);
+
 		// TODO cige yves saint laurent
 		// Active tracing and logging
 		if (isTracing()) {
+			vm.toggleTracing();
 			ac.toggleTracing();
 			rd.toggleTracing();
 		}
-		
+
 		if (isLogging()) {
+			vm.toggleLogging();
 			ac.toggleLogging();
 			rd.toggleLogging();
 		}
 
 
 		// ------- Connect the request dispatcher with the application virtual machine ------/
-/*
+		/*
 		requestDispatcher.associateVirtualMachine(AVMRequestSubmissionInboundPortURI);
 
 		applicationVM.findPortFromURI(AVMRequestNotificationOutboundPortURI)
 		.doConnection
 		(RDRequestNotificationInboundPortURI,
 				RequestNotificationConnector.class.getCanonicalName());
-*/
-		
+		 */
+
 		// -------- Port URI's are shared through the request ------/
 
 		request.setRequestSubmissionInboundPortURI(RDRequestSubmissionInboundPortURI);
