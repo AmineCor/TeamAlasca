@@ -18,7 +18,6 @@ import fr.upmc.components.ComponentI;
 import fr.upmc.components.exceptions.ComponentShutdownException;
 import fr.upmc.components.ports.AbstractPort;
 import fr.upmc.datacenter.interfaces.ControlledDataOfferedI;
-import fr.upmc.datacenter.interfaces.ControlledDataRequiredI;
 import fr.upmc.datacenter.interfaces.PushModeControllerI;
 import fr.upmc.datacenter.software.connectors.RequestSubmissionConnector;
 import fr.upmc.datacenter.software.interfaces.RequestI;
@@ -73,13 +72,13 @@ implements RequestSubmissionHandlerI,
 	private double executionTimeRequestSum;
 	
 	/** Number of requests */
-	private int nbRequets;
+	private int nbRequests;
 
 	/** Counter of total called "getAvg" */
 	private int counterAvgRequest;
 	
 	/** We definie a limit to avoid constant average value */
-	private static final int LIMIT_RESET_COUNTER_AVG= 10;
+	private static final int LIMIT_RESET_COUNTER_AVG = 10;
 	
 	/** Future of the task scheduled to push dynamic data */
 	private ScheduledFuture<?> pushingFuture;
@@ -133,6 +132,23 @@ implements RequestSubmissionHandlerI,
 		this(AbstractPort.generatePortURI(), requestSubmissionInboundPortURI, requestNotificationInboundPortURI, requestNotificationOutboundPortURI,requestDispatcherDynamicStateDataInboundPortURI);
 	}
 	
+	@Override
+	public void shutdown() throws ComponentShutdownException
+	{
+		try {
+			for (RequestSubmissionOutboundPort rsop : rsops) {
+				rsop.doDisconnection();
+				rsop.unpublishPort();
+			}
+
+			rnop.doDisconnection();
+			rnop.unpublishPort();
+		}
+		catch (Exception e) {
+			throw new ComponentShutdownException(e);
+		}
+	}
+	
 	public void associateVirtualMachine(final String virtualMachineRequestSubmissionInboundPortURI) throws Exception
 	{
 		if (this.virtualMachinesRequestSubmissionsInboundPortURIs.contains(virtualMachineRequestSubmissionInboundPortURI)) {
@@ -150,7 +166,7 @@ implements RequestSubmissionHandlerI,
 
 		// creating the connection from the new port to the VM
 		rsop.doConnection(virtualMachineRequestSubmissionInboundPortURI, RequestSubmissionConnector.class.getCanonicalName());
-
+		
 		// adding the port to our internal outbound port list
 		this.rsops.addFirst(rsop);
 
@@ -181,21 +197,21 @@ implements RequestSubmissionHandlerI,
 	@Override
 	public void acceptRequestSubmission(final RequestI r) throws Exception
 	{
-		if (rsops.isEmpty()) {
-			throw new Exception("request '" + r.getRequestURI() + "' cant be handled because no vm is connected to the " + this.toString());
-		}
-		
-		RequestSubmissionOutboundPort rsop = rsops.removeFirst(); 
-		
-		if (!rsop.connected()) {
-			throw new Exception("port '"+rsop.getPortURI()+"' of "+this.toString()+" is disconnected, that should not happen");
-		}
-
-		rsop.submitRequest(r);
-		logMessage("request '" + r.getRequestURI() + "' handled by the " + this.toString());
-		
-		// the port is pushed at the last position of the list, performing a good ports turnover
-		rsops.addLast(rsop);
+//		if (rsops.isEmpty()) {
+//			throw new Exception("request '" + r.getRequestURI() + "' cant be handled because no vm is connected to the " + this.toString());
+//		}
+//		
+//		RequestSubmissionOutboundPort rsop = rsops.removeFirst(); 
+//		
+//		if (!rsop.connected()) {
+//			throw new Exception("port '"+rsop.getPortURI()+"' of "+this.toString()+" is disconnected, that should not happen");
+//		}
+//
+//		rsop.submitRequest(r);
+//		logMessage("request '" + r.getRequestURI() + "' handled by the " + this.toString());
+//		
+//		// the port is pushed at the last position of the list, performing a good ports turnover
+//		rsops.addLast(rsop);
 	}
 
 	@Override
@@ -221,35 +237,24 @@ implements RequestSubmissionHandlerI,
 		rsops.addLast(rsop);
 	}
 
-
-	@Override
-	public void shutdown() throws ComponentShutdownException
-	{
-		try {
-			for (RequestSubmissionOutboundPort rsop : rsops) {
-				rsop.doDisconnection();
-				rsop.unpublishPort();
-			}
-
-			rnop.doDisconnection();
-			rnop.unpublishPort();
-		}
-		catch (Exception e) {
-			throw new ComponentShutdownException(e);
-		}
-	}
-
 	@Override
 	public void acceptRequestTerminationNotification(RequestI r) throws Exception
 	{
-		// Add exectution time to the sum
+		// Add execution time to the sum
 		executionTimeRequestSum = (double) (System.currentTimeMillis() - executionTimeRequest.remove(r.getRequestURI()));
-		++nbRequets;
+		++nbRequests;
+	
 		rnop.notifyRequestTermination(r);
 	}
 
 	public RequestDispatcherDynamicStateI getDynamicState() throws Exception
 	{
+		final Double avg = getAvg();
+		// Average is null in the case where this.nbRequests = 0
+		if (avg == null) {
+			return null;
+		}
+		
 		++counterAvgRequest;
 		RequestDispatcherDynamicState rdds = new RequestDispatcherDynamicState(this.URI, getAvg());
 		
@@ -264,13 +269,14 @@ implements RequestSubmissionHandlerI,
 	private void resetAvgCriteria()
 	{
 		this.executionTimeRequestSum = 0;
-		this.nbRequets = 0;
-		this.counterAvgRequest = 0;	
+		this.nbRequests = 0;
+		this.counterAvgRequest = 0;
 	}
 	
-	private double getAvg()
+	private Double getAvg()
 	{
-		return this.executionTimeRequestSum / this.nbRequets;
+		logMessage(this.toString() + " getAvg : " + executionTimeRequestSum + " - " + nbRequests);
+		return this.nbRequests <= 0 ? null : this.executionTimeRequestSum / this.nbRequests;
 	}
 	
 	@Override
@@ -296,7 +302,10 @@ implements RequestSubmissionHandlerI,
 	{
 		if (this.rddsdip.connected()) {
 			RequestDispatcherDynamicStateI rdds = this.getDynamicState() ;
-			this.rddsdip.send(rdds) ;
+			
+			if (rdds != null) {
+				this.rddsdip.send(rdds) ;
+			}
 		}
 	}
 

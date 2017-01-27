@@ -21,7 +21,7 @@ import fr.upmc.datacenter.hardware.computers.interfaces.ComputerStaticStateI;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerDynamicStateDataOutboundPort;
 import fr.upmc.datacenter.interfaces.ControlledDataRequiredI;
 import fr.upmc.datacenter.software.applicationvm.ApplicationVM;
-import fr.upmc.datacenter.software.applicationvm.ports.ApplicationVMManagementOutboundPort;
+import fr.upmc.datacenter.software.connectors.RequestNotificationConnector;
 
 /**
  * An admission controller is a component receiving admission requests from applications
@@ -234,14 +234,13 @@ implements AdmissionRequestHandlerI,ComputerStateDataConsumerI {
 
 
 		// ------- Connect the request dispatcher with the application virtual machine ------/
-		/*
-		requestDispatcher.associateVirtualMachine(AVMRequestSubmissionInboundPortURI);
+		rd.associateVirtualMachine(AVMRequestSubmissionInboundPortURI);
 
-		applicationVM.findPortFromURI(AVMRequestNotificationOutboundPortURI)
+		vm.findPortFromURI(AVMRequestNotificationOutboundPortURI)
 		.doConnection
 		(RDRequestNotificationInboundPortURI,
 				RequestNotificationConnector.class.getCanonicalName());
-		 */
+
 
 		// -------- Port URI's are shared through the request ------/
 
