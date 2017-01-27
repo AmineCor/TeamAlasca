@@ -172,24 +172,6 @@ implements RequestDispatcherStateDataConsumerI
 	}
 
 	private void createVirtualMachine(){
-		//------------- Create the application virtual machine ------------------/
-
-		final String AVMApplicationVMManagementInboundPortURI = AbstractPort.generatePortURI();
-		final String AVMRequestSubmissionInboundPortURI = AbstractPort.generatePortURI();
-		final String AVMRequestNotificationOutboundPortURI = AbstractPort.generatePortURI();
-
-		final ApplicationVM applicationVM = new ApplicationVM(AbstractPort.generatePortURI(),
-				AVMApplicationVMManagementInboundPortURI,
-				AVMRequestSubmissionInboundPortURI,
-				AVMRequestNotificationOutboundPortURI);
-
-		// allocate its cores
-		AllocatedCore[] ac = this.csop.allocateCores(CORES_NUMBER_THRESHOLD) ;
-
-		this.avmmop.doConnection(AVMApplicationVMManagementInboundPortURI, ApplicationVMManagementConnector.class.getCanonicalName());
-
-		this.avmmop.allocateCores(ac) ;
-		this.avmmop.doDisconnection();
 
 	}
 

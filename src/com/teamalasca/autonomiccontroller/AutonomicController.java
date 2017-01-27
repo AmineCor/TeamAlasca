@@ -27,7 +27,7 @@ import fr.upmc.datacenter.software.applicationvm.connectors.ApplicationVMManagem
 import fr.upmc.datacenter.software.applicationvm.ports.ApplicationVMManagementOutboundPort;
 
 public final class AutonomicController extends AbstractComponent
-implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
+implements RequestDispatcherStateDataConsumerI{
 
 	private final static int MAX_SIZE_AVERAGE_LIST = 3;
 	private final static int DEFAULT_CORE_NUMBER = 4;
@@ -53,8 +53,6 @@ implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
 	private List<Double> requestExecutionAverages;
 
 	private Actuator actuator;
-
-	private boolean[][] ressources;
 
 	public AutonomicController(String autonomicControllerURI,
 			final String computerURI,
@@ -129,12 +127,6 @@ implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
 	/** Connecting the admission controller with ports of a computer component */
 	private void doConnectionWithComputer(final String computerURI, final String computerDynamicStateDataInboundPortURI,final String manageCoreInboundPortURI) throws Exception
 	{
-		this.cdsdop.
-		doConnection(
-				computerDynamicStateDataInboundPortURI,
-				ControlledDataConnector.class.getCanonicalName()) ;
-		this.cdsdop.startUnlimitedPushing(200);
-
 		this.mcop.doConnection(manageCoreInboundPortURI, ManageCoreConnector.class.getCanonicalName());
 	}
 
@@ -142,21 +134,6 @@ implements RequestDispatcherStateDataConsumerI, ComputerStateDataConsumerI {
 	public String toString()
 	{
 		return "autonomic controller '"+this.URI+"'";
-	}
-
-	@Override
-	public void acceptComputerStaticData(String computerURI,
-			ComputerStaticStateI staticState) throws Exception
-	{		
-	}
-
-	@Override
-	public void acceptComputerDynamicData(String computerURI,
-			ComputerDynamicStateI currentDynamicState) throws Exception
-	{
-		this.logMessage(this.toString() + "received a message from a computer");
-
-		this.ressources = currentDynamicState.getCurrentCoreReservations();
 	}
 
 	@Override

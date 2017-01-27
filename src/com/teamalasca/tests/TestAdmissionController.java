@@ -250,8 +250,8 @@ extends		AbstractCVM
 		Thread.sleep(5000L) ;
 		// start the second application
 		this.app2.startApp();
-		
-		Thread.sleep(1000000000L) ;
+		// wait 15 more seconds
+		Thread.sleep(15000L) ;
 	}
 
 	/**

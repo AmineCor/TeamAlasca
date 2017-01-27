@@ -252,6 +252,8 @@ extends		AbstractCVM
 		Thread.sleep(5000L) ;
 		// start the second application
 		this.app2.startApp();
+		
+		Thread.sleep(Long.MAX_VALUE);
 	}
 
 	/**
@@ -283,7 +285,7 @@ extends		AbstractCVM
 				}
 			}).start() ;
 			// Sleep to let the test scenario execute to completion.
-			Thread.sleep(30000L) ;
+			Thread.sleep(Long.MAX_VALUE) ;
 			// Shut down the application.
 			System.out.println("shutting down...") ;
 			tac.shutdown() ;
