@@ -424,4 +424,10 @@ implements RequestDispatcherManagementI,
 			this.pushingFuture.cancel(false) ;
 		}		
 	}
+
+	@Override
+	public boolean hasOnlyOneVirtualMachine() throws Exception
+	{
+		return this.rsops.size() == 1;
+	}
 }

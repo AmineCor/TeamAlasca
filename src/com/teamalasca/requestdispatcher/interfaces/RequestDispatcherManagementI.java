@@ -8,4 +8,6 @@ public interface RequestDispatcherManagementI
 	
 	public void dissociateVirtualMachine(final String virtualMachineRequestSubmissionInboundPortURI) throws Exception;
 	
+	public boolean hasOnlyOneVirtualMachine() throws Exception;
+	
 }

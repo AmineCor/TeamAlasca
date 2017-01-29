@@ -37,33 +37,33 @@ extends		AbstractCVM
 	// Predefined URI of the different ports visible at the component assembly
 	// level.
 
-	public static final String	ComputerServicesInboundPortURI = "cs-ibp" ;
-	public static final String	ComputerServicesOutboundPortURI = "cs-obp" ;
-	public static final String	ComputerStaticStateDataInboundPortURI = "css-dip" ;
-	public static final String	ComputerStaticStateDataOutboundPortURI = "css-dop" ;
-	public static final String	ComputerDynamicStateDataInboundPortURI = "cds-dip" ;
-	public static final String	ComputerDynamicStateDataOutboundPortURI = "cds-dop" ;
-	public static final String	ComputerManageCoreInboundPortURI = "cmc-ib" ;
+	public static final String ComputerServicesInboundPortURI = "cs-ibp";
+	public static final String ComputerServicesOutboundPortURI = "cs-obp";
+	public static final String ComputerStaticStateDataInboundPortURI = "css-dip";
+	public static final String ComputerStaticStateDataOutboundPortURI = "css-dop";
+	public static final String ComputerDynamicStateDataInboundPortURI = "cds-dip";
+	public static final String ComputerDynamicStateDataOutboundPortURI = "cds-dop";
+	public static final String ComputerCoreManagerInboundPortURI = "ccm-ib";
 
 	// Admission controller ports
 	private static final String AdmissionControllerAdmissionRequestInboundPortURI = "ac-arip";
 	private static final String AdmissionControllerAdmissionNotifiationOutboundPortURI = "ac-anop";
 
 	// Virtual machines ports
-	public static final String	VirtualMachineRequestSubmissionInboundPortURI1 = "vm-rsip1" ;
-	public static final String	VirtualMachineRequestSubmissionInboundPortURI2 = "vm-rsip2" ;
-	public static final String	VirtualMachineRequestSubmissionInboundPortURI3 = "vm-rsip3" ;
-	public static final String VirtualMachineRequestNotificationOutboundPortURI1 = "vm-rnop1" ;
-	public static final String VirtualMachineRequestNotificationOutboundPortURI2="vm-rnop2" ;
-	public static final String VirtualMachineRequestNotificationOutboundPortURI3="vm-rnop3" ;
+	public static final String VirtualMachineRequestSubmissionInboundPortURI1 = "vm-rsip1";
+	public static final String VirtualMachineRequestSubmissionInboundPortURI2 = "vm-rsip2";
+	public static final String VirtualMachineRequestSubmissionInboundPortURI3 = "vm-rsip3";
+	public static final String VirtualMachineRequestNotificationOutboundPortURI1 = "vm-rnop1";
+	public static final String VirtualMachineRequestNotificationOutboundPortURI2="vm-rnop2";
+	public static final String VirtualMachineRequestNotificationOutboundPortURI3="vm-rnop3";
 
 	// Virtual machines management ports
-	public static final String	ApplicationVMManagementInboundPortURI1 = "avm-ibp" ;
+	public static final String ApplicationVMManagementInboundPortURI1 = "avm-ibp";
 	public static final String ApplicationVMManagementInboundPortURI2="avm-ibp1";
 	public static final String ApplicationVMManagementInboundPortURI3="avm-ibp2";
-	public static final String	ApplicationVMManagementOutboundPortURI = "avm-obp" ;
-	public static final String	ApplicationVMManagementOutboundPortURI1 = "avm-obp1";
-	public static final String	ApplicationVMManagementOutboundPortURI2 = "avm-obp2";
+	public static final String ApplicationVMManagementOutboundPortURI = "avm-obp" ;
+	public static final String ApplicationVMManagementOutboundPortURI1 = "avm-obp1";
+	public static final String ApplicationVMManagementOutboundPortURI2 = "avm-obp2";
 
 
 	/** Admission Controller **/
@@ -76,13 +76,13 @@ extends		AbstractCVM
 	protected RGApplication app2;
 
 	/** Port connected to the computer component to access its services.	*/
-	protected ComputerServicesOutboundPort				csPort ;
+	protected ComputerServicesOutboundPort csPort;
 	/** Port connected to the computer component to receive the static
 	 *  state data.															*/
-	protected ComputerStaticStateDataOutboundPort		cssPort ;
+	protected ComputerStaticStateDataOutboundPort cssPort;
 	/** Port connected to the computer component to receive the dynamic
 	 *  state data.															*/
-	protected ComputerDynamicStateDataOutboundPort		cdsPort ;
+	protected ComputerDynamicStateDataOutboundPort cdsPort;
 
 	// ------------------------------------------------------------------------
 	// Component virtual machine constructors
@@ -129,7 +129,7 @@ extends		AbstractCVM
 				ComputerServicesInboundPortURI,
 				ComputerStaticStateDataInboundPortURI,
 				ComputerDynamicStateDataInboundPortURI,
-				ComputerManageCoreInboundPortURI) ;
+				ComputerCoreManagerInboundPortURI);
 		this.addDeployedComponent(c) ;
 
 		// Create a mock-up computer services port to later allocate its cores
@@ -182,7 +182,7 @@ extends		AbstractCVM
 
 		this.addDeployedComponent(admissionController);
 
-		admissionController.doConnectionWithComputer(computerURI, ComputerManageCoreInboundPortURI, ComputerDynamicStateDataInboundPortURI);
+		admissionController.doConnectionWithComputer(computerURI, ComputerCoreManagerInboundPortURI, ComputerDynamicStateDataInboundPortURI);
 		admissionController.toggleLogging();
 		admissionController.toggleTracing();
 

@@ -2,7 +2,8 @@ package com.teamalasca.computer.interfaces;
 
 import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
 
-public interface CoreManager {
+public interface CoreManagementI
+{
 
 	public AllocatedCore allocateCore() throws Exception;
 	

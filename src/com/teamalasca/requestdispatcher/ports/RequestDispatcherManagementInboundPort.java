@@ -38,7 +38,7 @@ implements RequestDispatcherManagementI
 	public void associateVirtualMachine(
 			final String virtualMachineRequestSubmissionInboundPortURI)
 			throws Exception {
-		final RequestDispatcher rd = (RequestDispatcher) this.owner ;
+		final RequestDispatcher rd = (RequestDispatcher) this.owner;
 		this.owner.handleRequestAsync(
 					new ComponentI.ComponentService<Void>() {
 						@Override
@@ -46,14 +46,14 @@ implements RequestDispatcherManagementI
 							rd.associateVirtualMachine(virtualMachineRequestSubmissionInboundPortURI);
 							return null;
 						}
-					}) ;		
+					});		
 	}
 
 	@Override
 	public void dissociateVirtualMachine(
 			final String virtualMachineRequestSubmissionInboundPortURI)
 			throws Exception {
-		final RequestDispatcher rd = (RequestDispatcher) this.owner ;
+		final RequestDispatcher rd = (RequestDispatcher) this.owner;
 		this.owner.handleRequestAsync(
 					new ComponentI.ComponentService<Void>() {
 						@Override
@@ -61,7 +61,19 @@ implements RequestDispatcherManagementI
 							rd.dissociateVirtualMachine(virtualMachineRequestSubmissionInboundPortURI);
 							return null;
 						}
-					}) ;
+					});
+	}
+
+	@Override
+	public boolean hasOnlyOneVirtualMachine() throws Exception {
+		final RequestDispatcher rd = (RequestDispatcher) this.owner;
+		return this.owner.handleRequestSync(
+					new ComponentI.ComponentService<Boolean>() {
+						@Override
+						public Boolean call() throws Exception {
+							return rd.hasOnlyOneVirtualMachine();
+						}
+					});
 	}
 
 }

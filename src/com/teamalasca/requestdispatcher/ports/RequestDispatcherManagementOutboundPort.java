@@ -9,18 +9,19 @@ public class RequestDispatcherManagementOutboundPort
 extends	AbstractOutboundPort
 implements RequestDispatcherManagementI
 {
+	
 	public RequestDispatcherManagementOutboundPort(ComponentI owner) throws Exception
 	{
-		super(RequestDispatcherManagementI.class, owner) ;
+		super(RequestDispatcherManagementI.class, owner);
 
-		assert owner != null ;
+		assert owner != null;
 	}
 
 	public RequestDispatcherManagementOutboundPort(String uri, ComponentI owner) throws Exception
 	{
-		super(uri, RequestDispatcherManagementI.class, owner) ;
+		super(uri, RequestDispatcherManagementI.class, owner);
 
-		assert uri != null && owner != null ;
+		assert uri != null && owner != null;
 	}
 
 	@Override
@@ -37,6 +38,13 @@ implements RequestDispatcherManagementI
 			throws Exception {
 		((RequestDispatcherManagementI) this.connector).
 		dissociateVirtualMachine(virtualMachineRequestSubmissionInboundPortURI);		
+	}
+
+	@Override
+	public boolean hasOnlyOneVirtualMachine() throws Exception
+	{
+		return ((RequestDispatcherManagementI) this.connector).
+		hasOnlyOneVirtualMachine();
 	}
 	
 }

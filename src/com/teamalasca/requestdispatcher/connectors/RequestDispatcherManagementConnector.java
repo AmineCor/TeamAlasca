@@ -25,5 +25,11 @@ implements RequestDispatcherManagementI
 		((RequestDispatcherManagementI) this.offering).
 		dissociateVirtualMachine(virtualMachineRequestSubmissionInboundPortURI);		
 	}
+
+	@Override
+	public boolean hasOnlyOneVirtualMachine() throws Exception
+	{
+		return ((RequestDispatcherManagementI) this.offering).hasOnlyOneVirtualMachine();
+	}
 	
 }

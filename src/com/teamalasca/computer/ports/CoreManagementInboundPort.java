@@ -1,37 +1,41 @@
 package com.teamalasca.computer.ports;
 
 import com.teamalasca.computer.Computer;
-import com.teamalasca.computer.interfaces.CoreManager;
+import com.teamalasca.computer.interfaces.CoreManagementI;
 
 import fr.upmc.components.ComponentI;
 import fr.upmc.components.ports.AbstractInboundPort;
 import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
 
-public class ManageCoreInboundPort extends AbstractInboundPort implements CoreManager{
+public class CoreManagementInboundPort
+extends AbstractInboundPort
+implements CoreManagementI
+{
 
 	private static final long serialVersionUID = 7785838464919728639L;
 
-	public ManageCoreInboundPort(String uri,ComponentI owner) throws Exception {
-		super(uri,CoreManager.class, owner);
-		
+	public CoreManagementInboundPort(String uri,ComponentI owner) throws Exception
+	{
+		super(uri,CoreManagementI.class, owner);
 	}
 
 	@Override
-	public AllocatedCore allocateCore() throws Exception {
-		
-		final Computer c = (Computer) this.owner ;
+	public AllocatedCore allocateCore() throws Exception
+	{
+		final Computer c = (Computer) this.owner;
 		return c.handleRequestSync(
 					new ComponentI.ComponentService<AllocatedCore>() {
 						@Override
 						public AllocatedCore call() throws Exception {
 							return c.allocateCore();
 						}
-					}) ;
+					});
 	}
 
 	@Override
-	public void releaseCore(final AllocatedCore core) throws Exception {
-		final Computer c = (Computer) this.owner ;
+	public void releaseCore(final AllocatedCore core) throws Exception
+	{
+		final Computer c = (Computer) this.owner;
 		c.handleRequestSync(
 					new ComponentI.ComponentService<Void>() {
 						@Override
@@ -40,14 +44,14 @@ public class ManageCoreInboundPort extends AbstractInboundPort implements CoreMa
 							return null;
 							
 						}
-					}) ;
+					});
 		
 	}
 
 	@Override
-	public void changeFrequency(final AllocatedCore core,final int frequency) throws Exception{
-		
-		final Computer c = (Computer) this.owner ;
+	public void changeFrequency(final AllocatedCore core,final int frequency) throws Exception
+	{
+		final Computer c = (Computer) this.owner;
 		c.handleRequestSync(
 					new ComponentI.ComponentService<Void>() {
 						@Override
@@ -55,12 +59,13 @@ public class ManageCoreInboundPort extends AbstractInboundPort implements CoreMa
 							 c.changeFrequency(core,frequency);
 							return null;	
 						}
-					}) ;
+					});
 	}
 
 	@Override
-	public void releaseCores(final AllocatedCore[] cores) throws Exception {
-		final Computer c = (Computer) this.owner ;
+	public void releaseCores(final AllocatedCore[] cores) throws Exception
+	{
+		final Computer c = (Computer) this.owner;
 		c.handleRequestSync(
 					new ComponentI.ComponentService<Void>() {
 						@Override
@@ -69,20 +74,20 @@ public class ManageCoreInboundPort extends AbstractInboundPort implements CoreMa
 							return null;
 							
 						}
-					}) ;
-		
+					});
 	}
 
 	@Override
-	public AllocatedCore[] allocateCores(final int nbCores) throws Exception {
-		final Computer c = (Computer) this.owner ;
+	public AllocatedCore[] allocateCores(final int nbCores) throws Exception
+	{
+		final Computer c = (Computer) this.owner;
 		return c.handleRequestSync(
 					new ComponentI.ComponentService<AllocatedCore[]>() {
 						@Override
 						public AllocatedCore[] call() throws Exception {
 							return c.allocateCores(nbCores);
 						}
-					}) ;
+					});
 	}
 
 }

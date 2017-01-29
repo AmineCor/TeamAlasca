@@ -26,10 +26,10 @@ extends AbstractComponent
 implements AdmissionNotificationHandlerI, RequestNotificationHandlerI
 {
 
-	RequestGenerator rg ;
-	String URI;
-	AdmissionNotificationInboundPort anibp;
-	AdmissionRequestOutboundPort asop;
+	private RequestGenerator rg;
+	private String URI;
+	private AdmissionNotificationInboundPort anibp;
+	private AdmissionRequestOutboundPort asop;
 
 	public RGApplication(String uri) throws Exception
 	{
@@ -45,8 +45,8 @@ implements AdmissionNotificationHandlerI, RequestNotificationHandlerI
 				URI + "_rg_rnibp"
 		);
 		
-		rg.toggleLogging();
-		rg.toggleTracing();
+		//rg.toggleLogging();
+		//rg.toggleTracing();
 		
 		this.addOfferedInterface(AdmissionNotificationI.class);
 		this.anibp = new AdmissionNotificationInboundPort(URI + "_anibp", this) ;
@@ -89,13 +89,13 @@ implements AdmissionNotificationHandlerI, RequestNotificationHandlerI
 	}
 
 	@Override
-	public String toString() {
+	public String toString()
+	{
 		return "application '" + URI + "'";
 	}
 
 	public void startAsync()
 	{
-		
 	}
 
 }
