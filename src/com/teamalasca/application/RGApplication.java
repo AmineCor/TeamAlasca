@@ -23,7 +23,8 @@ import fr.upmc.datacenterclient.requestgenerator.RequestGenerator;
  */
 public class RGApplication
 extends AbstractComponent
-implements AdmissionNotificationHandlerI, RequestNotificationHandlerI
+implements AdmissionNotificationHandlerI,
+		   RequestNotificationHandlerI
 {
 
 	private RequestGenerator rg;

@@ -1,6 +1,5 @@
 package com.teamalasca.requestdispatcher;
 
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -46,7 +45,7 @@ implements RequestDispatcherManagementI,
 		   PushModeControllerI
 {
 
-	/** A private URI to identify this request dispatcher, for debug purpose*/
+	/** A private URI to identify this request dispatcher, for debug purpose */
 	private final String URI;
 
 	/** URIs of the virtual machines inbound ports allocated to this request dispatcher */
@@ -95,8 +94,8 @@ implements RequestDispatcherManagementI,
 			final String requestSubmissionInboundPortURI,
 			final String requestNotificationInboundPortURI,
 			final String requestNotificationOutboundPortURI,
-			final String requestDispatcherDynamicStateDataInboundPortURI
-			) throws Exception
+			final String requestDispatcherDynamicStateDataInboundPortURI)
+					throws Exception
 	{
 		super(1,1);
 		
@@ -108,7 +107,6 @@ implements RequestDispatcherManagementI,
 		assert requestNotificationOutboundPortURI != null;
 		assert requestDispatcherDynamicStateDataInboundPortURI != null;
 
-		
 		this.URI = requestDispatcherURI;
 
 		// for now, no vm is allocated to this request dispatcher
@@ -154,8 +152,8 @@ implements RequestDispatcherManagementI,
 			final String requestSubmissionInboundPortURI ,
 			final String requestNotificationInboundPortURI,
 			final String requestNotificationOutboundPortURI,
-			final String requestDispatcherDynamicStateDataInboundPortURI
-			) throws Exception
+			final String requestDispatcherDynamicStateDataInboundPortURI)
+					throws Exception
 	{
 		this(
 				AbstractPort.generatePortURI(),
@@ -430,4 +428,5 @@ implements RequestDispatcherManagementI,
 	{
 		return this.rsops.size() == 1;
 	}
+	
 }

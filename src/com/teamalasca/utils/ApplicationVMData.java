@@ -7,6 +7,7 @@ import java.util.Random;
 
 import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
 
+
 public class ApplicationVMData
 {
 

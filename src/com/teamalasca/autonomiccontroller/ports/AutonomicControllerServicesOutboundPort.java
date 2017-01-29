@@ -5,6 +5,7 @@ import com.teamalasca.autonomiccontroller.interfaces.AutonomicControllerServices
 import fr.upmc.components.ComponentI;
 import fr.upmc.components.ports.AbstractOutboundPort;
 
+
 public class AutonomicControllerServicesOutboundPort 
 extends	AbstractOutboundPort
 implements AutonomicControllerServicesI
@@ -12,7 +13,7 @@ implements AutonomicControllerServicesI
 	
 	public AutonomicControllerServicesOutboundPort(ComponentI owner) throws Exception
 	{
-		super(AutonomicControllerServicesI.class, owner) ;
+		super(AutonomicControllerServicesI.class, owner);
 	}
 
 	public AutonomicControllerServicesOutboundPort(String uri, ComponentI owner) throws Exception

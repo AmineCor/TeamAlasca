@@ -7,6 +7,7 @@ import fr.upmc.components.ComponentI;
 import fr.upmc.components.ports.AbstractInboundPort;
 import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
 
+
 public class CoreManagementInboundPort
 extends AbstractInboundPort
 implements CoreManagementI
@@ -14,7 +15,7 @@ implements CoreManagementI
 
 	private static final long serialVersionUID = 7785838464919728639L;
 
-	public CoreManagementInboundPort(String uri,ComponentI owner) throws Exception
+	public CoreManagementInboundPort(String uri, ComponentI owner) throws Exception
 	{
 		super(uri,CoreManagementI.class, owner);
 	}
@@ -45,11 +46,10 @@ implements CoreManagementI
 							
 						}
 					});
-		
 	}
 
 	@Override
-	public void changeFrequency(final AllocatedCore core,final int frequency) throws Exception
+	public void changeFrequency(final AllocatedCore core, final int frequency) throws Exception
 	{
 		final Computer c = (Computer) this.owner;
 		c.handleRequestSync(

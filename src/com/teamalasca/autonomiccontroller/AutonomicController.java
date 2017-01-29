@@ -32,6 +32,7 @@ import fr.upmc.datacenter.software.applicationvm.connectors.ApplicationVMManagem
 import fr.upmc.datacenter.software.applicationvm.ports.ApplicationVMManagementOutboundPort;
 import fr.upmc.datacenter.software.connectors.RequestNotificationConnector;
 
+
 public final class AutonomicController
 extends AbstractComponent
 implements AutonomicControllerServicesI,
@@ -188,7 +189,11 @@ implements AutonomicControllerServicesI,
 	}
 
 	/** Connecting the admission controller with ports of a computer component */
-	private void doConnectionWithComputer(final String computerURI, final String computerDynamicStateDataInboundPortURI,final String manageCoreInboundPortURI) throws Exception
+	private void doConnectionWithComputer(
+			final String computerURI,
+			final String computerDynamicStateDataInboundPortURI,
+			final String manageCoreInboundPortURI)
+					throws Exception
 	{
 		this.cmop.doConnection(manageCoreInboundPortURI, CoreManagementConnector.class.getCanonicalName());
 	}

@@ -6,6 +6,7 @@ import fr.upmc.components.ComponentI;
 import fr.upmc.components.interfaces.DataOfferedI;
 import fr.upmc.datacenter.ports.AbstractControlledDataInboundPort;
 
+
 public class RequestDispatcherDynamicStateDataInboundPort
 extends	AbstractControlledDataInboundPort
 {
@@ -14,7 +15,7 @@ extends	AbstractControlledDataInboundPort
 
 	public RequestDispatcherDynamicStateDataInboundPort(ComponentI owner) throws Exception
 	{
-		super(owner) ;
+		super(owner);
 
 		assert owner instanceof RequestDispatcher;
 	}

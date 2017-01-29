@@ -5,6 +5,7 @@ import com.teamalasca.requestdispatcher.interfaces.RequestDispatcherManagementI;
 import fr.upmc.components.ComponentI;
 import fr.upmc.components.ports.AbstractOutboundPort;
 
+
 public class RequestDispatcherManagementOutboundPort
 extends	AbstractOutboundPort
 implements RequestDispatcherManagementI
@@ -25,16 +26,14 @@ implements RequestDispatcherManagementI
 	}
 
 	@Override
-	public void associateVirtualMachine(
-			String virtualMachineRequestSubmissionInboundPortURI)
+	public void associateVirtualMachine(String virtualMachineRequestSubmissionInboundPortURI)
 			throws Exception {
 		((RequestDispatcherManagementI) this.connector).
 		associateVirtualMachine(virtualMachineRequestSubmissionInboundPortURI);		
 	}
 
 	@Override
-	public void dissociateVirtualMachine(
-			String virtualMachineRequestSubmissionInboundPortURI)
+	public void dissociateVirtualMachine(String virtualMachineRequestSubmissionInboundPortURI)
 			throws Exception {
 		((RequestDispatcherManagementI) this.connector).
 		dissociateVirtualMachine(virtualMachineRequestSubmissionInboundPortURI);		

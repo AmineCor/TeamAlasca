@@ -5,6 +5,7 @@ import com.teamalasca.computer.interfaces.CoreManagementI;
 import fr.upmc.components.connectors.AbstractConnector;
 import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
 
+
 public class CoreManagementConnector
 extends AbstractConnector
 implements CoreManagementI

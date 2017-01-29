@@ -7,6 +7,7 @@ import fr.upmc.components.ComponentI;
 import fr.upmc.components.interfaces.DataRequiredI;
 import fr.upmc.datacenter.ports.AbstractControlledDataOutboundPort;
 
+
 public class RequestDispatcherDynamicStateDataOutboundPort
 extends	AbstractControlledDataOutboundPort
 {
@@ -17,7 +18,7 @@ extends	AbstractControlledDataOutboundPort
 
 	public RequestDispatcherDynamicStateDataOutboundPort(ComponentI owner, String requestDispatcherURI) throws Exception
 	{
-		super(owner) ;
+		super(owner);
 		this.requestDispatcherURI = requestDispatcherURI;
 		
 		assert owner instanceof RequestDispatcherStateDataConsumerI;
@@ -28,7 +29,7 @@ extends	AbstractControlledDataOutboundPort
 		super(uri, owner);
 		this.requestDispatcherURI = requestDispatcherURI;
 
-		assert	owner instanceof RequestDispatcherStateDataConsumerI ;
+		assert owner instanceof RequestDispatcherStateDataConsumerI;
 	}
 
 	/**
@@ -38,8 +39,9 @@ extends	AbstractControlledDataOutboundPort
 	public void	receive(DataRequiredI.DataI d) throws Exception
 	{
 		((RequestDispatcherStateDataConsumerI) this.owner).
-						acceptRequestDispatcherDynamicData(this.requestDispatcherURI,
-												  (RequestDispatcherDynamicStateI) d) ;
+						acceptRequestDispatcherDynamicData(
+								this.requestDispatcherURI,
+								(RequestDispatcherDynamicStateI) d);
 	}
 	
 }

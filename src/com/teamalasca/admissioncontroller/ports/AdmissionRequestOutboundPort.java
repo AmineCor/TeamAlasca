@@ -1,12 +1,12 @@
 package com.teamalasca.admissioncontroller.ports;
 
-
 import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestI;
 import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestHandlerI;
 import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestSubmitterI;
 
 import fr.upmc.components.ComponentI;
 import fr.upmc.components.ports.AbstractOutboundPort;
+
 
 public class AdmissionRequestOutboundPort
 extends AbstractOutboundPort

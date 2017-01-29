@@ -13,6 +13,7 @@ import fr.upmc.datacenter.hardware.processors.interfaces.ProcessorManagementI;
 import fr.upmc.datacenter.hardware.processors.interfaces.ProcessorStaticStateI;
 import fr.upmc.datacenter.hardware.processors.ports.ProcessorManagementOutboundPort;
 
+
 public class Computer
 extends fr.upmc.datacenter.hardware.computers.Computer
 implements CoreManagementI
@@ -64,7 +65,8 @@ implements CoreManagementI
 	}
 
 	@Override
-	public void changeFrequency(final AllocatedCore core, final int frequency) throws Exception {
+	public void changeFrequency(final AllocatedCore core, final int frequency) throws Exception
+	{
 		// connect
 		pmop.doConnection(
 				core.processorInboundPortURI.get(Processor.ProcessorPortTypes.MANAGEMENT),

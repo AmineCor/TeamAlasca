@@ -6,12 +6,13 @@ import fr.upmc.components.ComponentI;
 import fr.upmc.components.ports.AbstractOutboundPort;
 import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
 
+
 public class CoreManagementOutboundPort
 extends AbstractOutboundPort
 implements CoreManagementI
 {
 
-	public CoreManagementOutboundPort( String uri,ComponentI owner) throws Exception
+	public CoreManagementOutboundPort(String uri, ComponentI owner) throws Exception
 	{
 		super(uri, CoreManagementI.class, owner);
 	}
@@ -58,4 +59,3 @@ implements CoreManagementI
 	}
 
 }
-

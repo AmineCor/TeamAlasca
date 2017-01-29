@@ -6,16 +6,18 @@ import fr.upmc.components.connectors.AbstractConnector;
 import fr.upmc.datacenter.software.interfaces.RequestI;
 import fr.upmc.datacenter.software.interfaces.RequestNotificationI;
 
-public class RequestDispatcher extends com.teamalasca.requestdispatcher.RequestDispatcher {
-	
-	
+
+public class RequestDispatcher
+extends com.teamalasca.requestdispatcher.RequestDispatcher
+{
+
 	public RequestDispatcher(
 			String requestDispatcherURI,
 		    String managementInboundPortURI,
 			String requestSubmissionInboundPortURI,
 			String requestNotificationInboundPortURI,
-			String requestNotificationOutboundPortURI
-			) throws Exception {
+			String requestNotificationOutboundPortURI)
+					throws Exception {
 		super(
 				requestDispatcherURI,
 				managementInboundPortURI,
@@ -26,9 +28,17 @@ public class RequestDispatcher extends com.teamalasca.requestdispatcher.RequestD
 
 	Class<?> connectorClass;
 	
-	public void doAppConnexion(String uriPort, Class<?> offeredInterface,HashMap<String,String> methodNamesMap) throws Exception
+	public void doAppConnexion(
+			String uriPort, Class<?> offeredInterface,
+			HashMap<String,String> methodNamesMap)
+					throws Exception
 	{		
-		connectorClass = fcMakeconnector.makeConnectorClassJavassist("makeConnectorClassJavassist.GenerateConnector",AbstractConnector.class, RequestNotificationI.class, offeredInterface, methodNamesMap) ; 
+		connectorClass = Makeconnector.makeConnectorClassJavassist(
+				"makeConnectorClassJavassist.GenerateConnector",
+				AbstractConnector.class,
+				RequestNotificationI.class,
+				offeredInterface, methodNamesMap);
+		
 		//C'est notre request notification outBound port declaré dans le RD qui exist dans com.teamalasca.requestdispatcher.RequestDispatcher
 		//Le packege de notre RD original
 		//Utilisé pour faire la connection entre notre RD et lapplication 
@@ -36,9 +46,11 @@ public class RequestDispatcher extends com.teamalasca.requestdispatcher.RequestD
 	}
 	
 	@Override
-	public void acceptRequestTerminationNotification(RequestI r) throws Exception {
+	public void acceptRequestTerminationNotification(RequestI r) throws Exception
+	{
 		logMessage("Request terminated "+r.getRequestURI());
 		//Meme port 
-		((RequestNotificationI)rnop).notifyRequestTermination(r);
+		((RequestNotificationI) rnop).notifyRequestTermination(r);
 	}
+	
 }

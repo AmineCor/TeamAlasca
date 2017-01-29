@@ -1,11 +1,7 @@
 package com.teamalasca.admissioncontroller.requests;
 
 import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestI;
-/**
- * 
- * 
- *
- */
+
 
 public final class AdmissionRequest
 implements AdmissionRequestI
@@ -69,16 +65,13 @@ implements AdmissionRequestI
 	}
 
 	@Override
-	public void setRequestSubmissionInboundPortURI(
-			String requestSubmissionInboundPortURI)
+	public void setRequestSubmissionInboundPortURI(String requestSubmissionInboundPortURI)
 	{
 		this.rsip = requestSubmissionInboundPortURI;
-		
 	}
 
 	@Override
-	public void setRequestNotificationOutboundPortURI(
-			String requestNotificationOutboundPortURI)
+	public void setRequestNotificationOutboundPortURI(String requestNotificationOutboundPortURI)
 	{
 		this.rnop = requestNotificationOutboundPortURI;
 	}

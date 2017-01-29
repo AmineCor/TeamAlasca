@@ -1,5 +1,6 @@
 package com.teamalasca.requestdispatcher.interfaces;
 
+
 public interface RequestDispatcherStateDataConsumerI
 {
 	

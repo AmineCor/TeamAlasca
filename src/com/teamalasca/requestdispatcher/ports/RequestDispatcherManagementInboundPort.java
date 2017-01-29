@@ -14,19 +14,14 @@ implements RequestDispatcherManagementI
 	
 	private static final long serialVersionUID = 1L;
 
-	public RequestDispatcherManagementInboundPort(
-		ComponentI owner
-		) throws Exception
+	public RequestDispatcherManagementInboundPort(ComponentI owner) throws Exception
 	{
 		super(RequestDispatcherManagementI.class, owner);
 
 		assert owner != null && owner instanceof RequestDispatcher;
 	}
 
-	public RequestDispatcherManagementInboundPort(
-		String uri,
-		ComponentI owner
-		) throws Exception
+	public RequestDispatcherManagementInboundPort(String uri, ComponentI owner) throws Exception
 	{
 		super(uri, RequestDispatcherManagementI.class, owner);
 
@@ -35,8 +30,7 @@ implements RequestDispatcherManagementI
 
 
 	@Override
-	public void associateVirtualMachine(
-			final String virtualMachineRequestSubmissionInboundPortURI)
+	public void associateVirtualMachine(final String virtualMachineRequestSubmissionInboundPortURI)
 			throws Exception {
 		final RequestDispatcher rd = (RequestDispatcher) this.owner;
 		this.owner.handleRequestAsync(
@@ -50,8 +44,7 @@ implements RequestDispatcherManagementI
 	}
 
 	@Override
-	public void dissociateVirtualMachine(
-			final String virtualMachineRequestSubmissionInboundPortURI)
+	public void dissociateVirtualMachine(final String virtualMachineRequestSubmissionInboundPortURI)
 			throws Exception {
 		final RequestDispatcher rd = (RequestDispatcher) this.owner;
 		this.owner.handleRequestAsync(

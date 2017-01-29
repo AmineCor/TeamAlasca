@@ -1,6 +1,4 @@
-
 package com.teamalasca.admissioncontroller;
-
 
 import com.teamalasca.admissioncontroller.connectors.AdmissionNotificationConnector;
 import com.teamalasca.admissioncontroller.interfaces.AdmissionNotificationI;
@@ -22,6 +20,7 @@ import fr.upmc.datacenter.hardware.computers.interfaces.ComputerStateDataConsume
 import fr.upmc.datacenter.hardware.computers.interfaces.ComputerStaticStateI;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerDynamicStateDataOutboundPort;
 import fr.upmc.datacenter.interfaces.ControlledDataRequiredI;
+
 
 /**
  * An admission controller is a component receiving admission requests from applications
@@ -102,7 +101,11 @@ implements AdmissionRequestHandlerI,
 
 
 	/** Connecting the admission controller with a computer component */
-	public void doConnectionWithComputer(final String computerURI, final String manageCoreInboundPortURI, final String computerDynamicStateDataInboundPortURI) throws Exception
+	public void doConnectionWithComputer(
+			final String computerURI,
+			final String manageCoreInboundPortURI,
+			final String computerDynamicStateDataInboundPortURI)
+					throws Exception
 	{
 		this.computerURI = computerURI;
 		this.manageCoreInboundPortURI = manageCoreInboundPortURI;
@@ -166,7 +169,7 @@ implements AdmissionRequestHandlerI,
 				for (int j = 0; j < ressources[i].length; ++j)
 				{
 					if (!ressources[i][j]) {
-						count++;
+						++count;
 					}
 				}
 			}

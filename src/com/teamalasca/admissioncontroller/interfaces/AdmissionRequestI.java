@@ -1,7 +1,8 @@
 package com.teamalasca.admissioncontroller.interfaces;
 
-public interface AdmissionRequestI {
 
+public interface AdmissionRequestI
+{
 
 	public String getApplicationURI();
 	public String getApplicationAdmissionNotificationInboundPortURI();
@@ -15,6 +16,5 @@ public interface AdmissionRequestI {
 
 	public void setRequestSubmissionInboundPortURI(String requestSubmissionInboundPortURI);
 	public void setRequestNotificationOutboundPortURI(String requestNotificationOutboundPortURI);
-
 	
 }

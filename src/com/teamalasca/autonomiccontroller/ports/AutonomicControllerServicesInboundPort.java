@@ -16,7 +16,7 @@ implements AutonomicControllerServicesI
 
 	public AutonomicControllerServicesInboundPort(ComponentI owner) throws Exception
 	{
-		super(AutonomicControllerServicesI.class, owner) ;
+		super(AutonomicControllerServicesI.class, owner);
 
 		assert owner instanceof AutonomicController;
 	}
@@ -31,7 +31,7 @@ implements AutonomicControllerServicesI
 	@Override
 	public void doPeriodicAdaptation() throws Exception
 	{
-		final AutonomicController ac = (AutonomicController) this.owner ;
+		final AutonomicController ac = (AutonomicController) this.owner;
 		this.owner.handleRequestAsync(
 					new ComponentI.ComponentService<Void>() {
 						@Override
