@@ -95,5 +95,11 @@ implements CoreManagementI
 	{
 		return currentCoreFrequencies[core.coreNo];
 	}
+	
+	@Override
+	public String toString()
+	{
+		return "computer '" + this.computerURI + "'";
+	}
 
 }

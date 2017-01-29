@@ -300,12 +300,6 @@ implements RequestDispatcherManagementI,
 		// We can't compute the average if nbRequests is reset to 0
 		return this.nbRequests <= 0 ? null : this.executionTimeRequestSum / this.nbRequests;
 	}
-	
-	@Override
-	public String toString()
-	{
-		return "request dispatcher '" + URI + "'";
-	}
 
 	/**
 	 * push the dynamic state of the request dipatcher through its notification data
@@ -427,6 +421,12 @@ implements RequestDispatcherManagementI,
 	public boolean hasOnlyOneVirtualMachine() throws Exception
 	{
 		return this.rsops.size() == 1;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return "request dispatcher '" + URI + "'";
 	}
 	
 }

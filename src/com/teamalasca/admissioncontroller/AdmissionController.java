@@ -252,16 +252,16 @@ implements AdmissionRequestHandlerI,
 	}
 
 	@Override
-	public String toString()
-	{
-		return "admission controller '" + this.URI + "'";
-	}
-
-	@Override
 	public void acceptComputerStaticData(String computerURI, ComputerStaticStateI staticState)
 			throws Exception
 	{
 		logMessage("recevied static data");
+	}
+	
+	@Override
+	public String toString()
+	{
+		return "admission controller '" + this.URI + "'";
 	}
 	
 }

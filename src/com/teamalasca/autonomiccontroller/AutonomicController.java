@@ -199,12 +199,6 @@ implements AutonomicControllerServicesI,
 	}
 
 	@Override
-	public String toString()
-	{
-		return "autonomic controller '" + this.URI + "'";
-	}
-
-	@Override
 	public void acceptRequestDispatcherDynamicData(
 			String dispatcherURI,
 			RequestDispatcherDynamicStateI currentDynamicState)
@@ -428,4 +422,10 @@ implements AutonomicControllerServicesI,
 				}, PERIODIC_INTERVAL_ADAPTATION, TimeUnit.MILLISECONDS);
 	}
 
+	@Override
+	public String toString()
+	{
+		return "autonomic controller '" + this.URI + "'";
+	}
+	
 }

@@ -95,8 +95,4 @@ implements AdmissionNotificationHandlerI,
 		return "application '" + URI + "'";
 	}
 
-	public void startAsync()
-	{
-	}
-
 }
