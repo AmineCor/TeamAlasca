@@ -51,5 +51,11 @@ implements CoreManagementI
 		return ((CoreManagementI) this.connector).allocateCores(nbCores);
 	}
 
+	@Override
+	public int getCurrentFrequency(AllocatedCore core) throws Exception
+	{
+		return ((CoreManagementI) this.connector).getCurrentFrequency(core);
+	}
+
 }
 

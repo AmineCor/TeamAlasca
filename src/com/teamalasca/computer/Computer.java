@@ -8,7 +8,9 @@ import com.teamalasca.computer.ports.CoreManagementInboundPort;
 
 import fr.upmc.datacenter.hardware.processors.Processor;
 import fr.upmc.datacenter.hardware.processors.connectors.ProcessorManagementConnector;
+import fr.upmc.datacenter.hardware.processors.interfaces.ProcessorDynamicStateI;
 import fr.upmc.datacenter.hardware.processors.interfaces.ProcessorManagementI;
+import fr.upmc.datacenter.hardware.processors.interfaces.ProcessorStaticStateI;
 import fr.upmc.datacenter.hardware.processors.ports.ProcessorManagementOutboundPort;
 
 public class Computer
@@ -18,6 +20,7 @@ implements CoreManagementI
 
 	final private CoreManagementInboundPort cmip;
 	final private ProcessorManagementOutboundPort pmop;
+	private int[] currentCoreFrequencies;
 	
 	public Computer(
 			final String computerURI,
@@ -53,14 +56,42 @@ implements CoreManagementI
 		this.addPort(this.pmop);
 		this.pmop.publishPort();
 		this.addRequiredInterface(ProcessorManagementI.class);
+		
+		// Get data from processors
+		for (final Processor p : processors) {
+			p.startUnlimitedPushing(500);
+		}
 	}
 
 	@Override
 	public void changeFrequency(final AllocatedCore core, final int frequency) throws Exception {
-		final String portUri = core.processorInboundPortURI.get(Processor.ProcessorPortTypes.MANAGEMENT);
-		pmop.doConnection(portUri, ProcessorManagementConnector.class.getCanonicalName());
+		// connect
+		pmop.doConnection(
+				core.processorInboundPortURI.get(Processor.ProcessorPortTypes.MANAGEMENT),
+				ProcessorManagementConnector.class.getCanonicalName());
+		
+		// update frequency
 		pmop.setCoreFrequency(core.coreNo, frequency);
+		
+		// disconnect
 		pmop.doDisconnection();
+	}
+	
+	@Override
+	public void acceptProcessorStaticData(String processorURI, ProcessorStaticStateI ss) throws Exception
+	{
+	}
+	
+	@Override
+	public void acceptProcessorDynamicData(String processorURI, ProcessorDynamicStateI cds) throws Exception
+	{
+		currentCoreFrequencies = cds.getCurrentCoreFrequencies();
+	}
+
+	@Override
+	public int getCurrentFrequency(AllocatedCore core) throws Exception
+	{
+		return currentCoreFrequencies[core.coreNo];
 	}
 
 }

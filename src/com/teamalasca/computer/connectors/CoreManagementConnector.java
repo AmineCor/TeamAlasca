@@ -40,4 +40,10 @@ implements CoreManagementI
 		((CoreManagementI) this.offering).changeFrequency(core, frequency);
 	}
 
+	@Override
+	public int getCurrentFrequency(AllocatedCore core) throws Exception
+	{
+		return ((CoreManagementI) this.offering).getCurrentFrequency(core);
+	}
+
 }

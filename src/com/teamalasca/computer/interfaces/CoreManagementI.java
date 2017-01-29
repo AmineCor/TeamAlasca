@@ -15,4 +15,6 @@ public interface CoreManagementI
 	
 	public void changeFrequency(AllocatedCore core, int frequency) throws Exception;
 	
+	public int getCurrentFrequency(AllocatedCore core) throws Exception;
+	
 }

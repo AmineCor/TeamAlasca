@@ -45,9 +45,11 @@ implements AutonomicControllerServicesI,
 	private static final double THRESHOLD_FREQUENCY = 0.20;
 	private static final double THRESHOLD_CORE = 0.40;
 	private static final double THRESHOLD_VM = 0.80;
+	
+	private static final int DELTA_FREQUENCY = 100;
 
-	private static final int PERIODIC_INTERVAL_ADAPTATION = 20000;
-	private static final int PUSHING_INTERVAL_REQUEST_DISPATCHER = 10000;
+	private static final int PERIODIC_INTERVAL_ADAPTATION = 15000;
+	private static final int PUSHING_INTERVAL_REQUEST_DISPATCHER = 5000;
 
 	/** A private URI to identify this autonomic controller, for debug purpose */
 	private final String URI;
@@ -71,7 +73,7 @@ implements AutonomicControllerServicesI,
 	private ComputerDynamicStateDataOutboundPort cdsdop;
 
 	/** Outbound port connected to the computer to manage its cores **/
-	private CoreManagementOutboundPort mcop;
+	private CoreManagementOutboundPort cmop;
 
 	/** Internal ports to manage the application virtual machines allocated */
 	private Map<ApplicationVMManagementOutboundPort, ApplicationVMData> avmmop;
@@ -126,10 +128,10 @@ implements AutonomicControllerServicesI,
 		this.addRequiredInterface(ControlledDataRequiredI.ControlledPullI.class) ;
 
 		// create port to allocate and manage computer cores
-		this.mcop = new CoreManagementOutboundPort(this);
+		this.cmop = new CoreManagementOutboundPort(this);
 		this.addRequiredInterface(CoreManagementI.class);
-		this.addPort(this.mcop);
-		this.mcop.publishPort();
+		this.addPort(this.cmop);
+		this.cmop.publishPort();
 
 		// create port to receive requests execution time from the request dispatcher
 		this.rddsdop = new RequestDispatcherDynamicStateDataOutboundPort(this, requestDispatcherURI);
@@ -188,7 +190,7 @@ implements AutonomicControllerServicesI,
 	/** Connecting the admission controller with ports of a computer component */
 	private void doConnectionWithComputer(final String computerURI, final String computerDynamicStateDataInboundPortURI,final String manageCoreInboundPortURI) throws Exception
 	{
-		this.mcop.doConnection(manageCoreInboundPortURI, CoreManagementConnector.class.getCanonicalName());
+		this.cmop.doConnection(manageCoreInboundPortURI, CoreManagementConnector.class.getCanonicalName());
 	}
 
 	@Override
@@ -262,7 +264,7 @@ implements AutonomicControllerServicesI,
 	private void allocateCores(final ApplicationVMManagementOutboundPort AVMManagementOutboundPort, int nbCores) throws Exception
 	{
 		// allocate its cores
-		AllocatedCore[] ac = this.mcop.allocateCores(DEFAULT_CORE_NUMBER);
+		AllocatedCore[] ac = this.cmop.allocateCores(DEFAULT_CORE_NUMBER);
 		AVMManagementOutboundPort.allocateCores(ac);
 				
 		// keep cores in memory for later adaptation on cores
@@ -277,7 +279,7 @@ implements AutonomicControllerServicesI,
 	private void releaseCore(final ApplicationVMManagementOutboundPort AVMManagementOutboundPort, final AllocatedCore ac) throws Exception
 	{
 		// release core
-		this.mcop.releaseCore(ac);
+		this.cmop.releaseCore(ac);
 		
 		// release core from memory for this vm
 		this.avmmop.get(AVMManagementOutboundPort).removeCore(ac);
@@ -348,7 +350,14 @@ implements AutonomicControllerServicesI,
 									// Increase frequency
 									else if (movingAvg > THRESHOLD * (1 + THRESHOLD_FREQUENCY)) {
 										logMessage(this.toString() + " : Do adaptation - Increase frequency");
-										//changeFrequency();
+										// Select a random vm
+										final ApplicationVMManagementOutboundPort vm = selectRandomVm();
+										
+										// Select a random core
+										final AllocatedCore ac = avmmop.get(vm).selectRandomCore();
+										
+										// Increase its frequency
+										cmop.changeFrequency(ac, cmop.getCurrentFrequency(ac) + DELTA_FREQUENCY);
 									}
 									// In other case do nothing
 									else {
@@ -383,7 +392,14 @@ implements AutonomicControllerServicesI,
 									// Decrease frequency
 									else if (movingAvg <= THRESHOLD * (1 - THRESHOLD_FREQUENCY)) {
 										logMessage(this.toString() + " : Do adaptation - Decrease frequency");
-										//changeFrequency();
+										// Select a random vm
+										final ApplicationVMManagementOutboundPort vm = selectRandomVm();
+										
+										// Select a random core
+										final AllocatedCore ac = avmmop.get(vm).selectRandomCore();
+										
+										// Decrease its frequency
+										cmop.changeFrequency(ac, cmop.getCurrentFrequency(ac) - DELTA_FREQUENCY);
 									}
 									// In other case do nothing
 									else {
