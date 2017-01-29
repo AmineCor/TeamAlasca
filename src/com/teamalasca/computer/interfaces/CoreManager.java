@@ -4,7 +4,6 @@ import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
 
 public interface CoreManager {
 
-	
 	public AllocatedCore allocateCore() throws Exception;
 	
 	public AllocatedCore[] allocateCores(int nbCores) throws Exception;
@@ -14,4 +13,5 @@ public interface CoreManager {
 	public void releaseCores(AllocatedCore[] cores) throws Exception;
 	
 	public void changeFrequency(AllocatedCore core, int frequency) throws Exception;
+	
 }

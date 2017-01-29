@@ -1,16 +1,15 @@
 package com.teamalasca.application;
 
 import com.teamalasca.admissioncontroller.connectors.AdmissionRequestConnector;
-import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestI;
 import com.teamalasca.admissioncontroller.interfaces.AdmissionNotificationHandlerI;
 import com.teamalasca.admissioncontroller.interfaces.AdmissionNotificationI;
+import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestI;
 import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestSubmitterI;
 import com.teamalasca.admissioncontroller.ports.AdmissionNotificationInboundPort;
 import com.teamalasca.admissioncontroller.ports.AdmissionRequestOutboundPort;
 import com.teamalasca.admissioncontroller.requests.AdmissionRequest;
 
 import fr.upmc.components.AbstractComponent;
-import fr.upmc.components.cvm.AbstractCVM;
 import fr.upmc.datacenter.software.connectors.RequestSubmissionConnector;
 import fr.upmc.datacenter.software.interfaces.RequestI;
 import fr.upmc.datacenter.software.interfaces.RequestNotificationHandlerI;
@@ -96,7 +95,7 @@ implements AdmissionNotificationHandlerI, RequestNotificationHandlerI
 
 	public void startAsync()
 	{
-		// TODO Auto-generated method stub
+		
 	}
 
 }

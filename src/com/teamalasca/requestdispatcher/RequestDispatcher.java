@@ -11,7 +11,9 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import com.teamalasca.requestdispatcher.interfaces.RequestDispatcherDynamicStateI;
+import com.teamalasca.requestdispatcher.interfaces.RequestDispatcherManagementI;
 import com.teamalasca.requestdispatcher.ports.RequestDispatcherDynamicStateDataInboundPort;
+import com.teamalasca.requestdispatcher.ports.RequestDispatcherManagementInboundPort;
 
 import fr.upmc.components.AbstractComponent;
 import fr.upmc.components.ComponentI;
@@ -38,7 +40,8 @@ import fr.upmc.datacenter.software.ports.RequestSubmissionOutboundPort;
  */
 public class RequestDispatcher
 extends AbstractComponent 
-implements RequestSubmissionHandlerI,
+implements RequestDispatcherManagementI,
+		   RequestSubmissionHandlerI,
 		   RequestNotificationHandlerI,
 		   PushModeControllerI
 {
@@ -53,6 +56,9 @@ implements RequestSubmissionHandlerI,
 	 * A linked list is used in order to deal with our dispatching policy */
 	private final LinkedList<RequestSubmissionOutboundPort> rsops;
 
+	/** Inbound port offering the management interface.	*/
+	protected RequestDispatcherManagementInboundPort rdmip ;
+	
 	/** Inbound port of the request dispatcher receiving notifications from the virtual machines */
 	private final RequestNotificationInboundPort rnip;
 
@@ -83,12 +89,25 @@ implements RequestSubmissionHandlerI,
 	/** Future of the task scheduled to push dynamic data */
 	private ScheduledFuture<?> pushingFuture;
 	
-	public RequestDispatcher(final String requestDispatcherURI, final String requestSubmissionInboundPortURI,
-			final String requestNotificationInboundPortURI, final String requestNotificationOutboundPortURI, final String requestDispatcherDynamicStateDataInboundPortURI)
-					throws Exception
+	public RequestDispatcher(
+			final String requestDispatcherURI,
+			final String requestDispatcherManagementInboundPortURI,
+			final String requestSubmissionInboundPortURI,
+			final String requestNotificationInboundPortURI,
+			final String requestNotificationOutboundPortURI,
+			final String requestDispatcherDynamicStateDataInboundPortURI
+			) throws Exception
 	{
-		
 		super(1,1);
+		
+		// Pre-conditions
+		assert requestDispatcherURI != null;
+		assert requestDispatcherManagementInboundPortURI != null ;
+		assert requestSubmissionInboundPortURI != null;
+		assert requestNotificationInboundPortURI != null;
+		assert requestNotificationOutboundPortURI != null;
+		assert requestDispatcherDynamicStateDataInboundPortURI != null;
+
 		
 		this.URI = requestDispatcherURI;
 
@@ -100,19 +119,24 @@ implements RequestSubmissionHandlerI,
 		this.addRequiredInterface(RequestSubmissionI.class);
 
 		// whenever the other ports are initialized
+		this.addOfferedInterface(RequestDispatcherManagementI.class) ;
+		this.rdmip = new RequestDispatcherManagementInboundPort(requestDispatcherManagementInboundPortURI, this);
+		this.addPort(this.rdmip);
+		this.rdmip.publishPort();
+		
 		this.rsip = new RequestSubmissionInboundPort(requestSubmissionInboundPortURI, this);
 		this.addPort(rsip);
 		this.rsip.publishPort();
 		this.addOfferedInterface(RequestSubmissionI.class);
 
-		this.rnop = new RequestNotificationOutboundPort(requestNotificationOutboundPortURI, this) ;
-		this.addPort(this.rnop) ;
-		this.rnop.publishPort() ;
+		this.rnop = new RequestNotificationOutboundPort(requestNotificationOutboundPortURI, this);
+		this.addPort(this.rnop);
+		this.rnop.publishPort();
 		this.addRequiredInterface(RequestNotificationI.class);
 
-		this.rnip = new RequestNotificationInboundPort(requestNotificationInboundPortURI, this) ;
-		this.addPort(this.rnip) ;
-		this.rnip.publishPort() ;
+		this.rnip = new RequestNotificationInboundPort(requestNotificationInboundPortURI, this);
+		this.addPort(this.rnip);
+		this.rnip.publishPort();
 		this.addOfferedInterface(RequestNotificationI.class);
 		
 		this.rddsdip = new RequestDispatcherDynamicStateDataInboundPort(requestDispatcherDynamicStateDataInboundPortURI,this);
@@ -120,16 +144,26 @@ implements RequestSubmissionHandlerI,
 		this.rddsdip.publishPort();
 		this.addOfferedInterface(ControlledDataOfferedI.ControlledPullI.class);
 
-		// Init elements to compute average
+		// Initialize elements to compute average
 		this.executionTimeRequest = new HashMap<>();
 		resetAvgCriteria();
 	}
 
-	public RequestDispatcher(final String requestSubmissionInboundPortURI ,
-			final String requestNotificationInboundPortURI, final String requestNotificationOutboundPortURI, final String requestDispatcherDynamicStateDataInboundPortURI)
-					throws Exception
+	public RequestDispatcher(
+			final String managementInboundPortURI,
+			final String requestSubmissionInboundPortURI ,
+			final String requestNotificationInboundPortURI,
+			final String requestNotificationOutboundPortURI,
+			final String requestDispatcherDynamicStateDataInboundPortURI
+			) throws Exception
 	{
-		this(AbstractPort.generatePortURI(), requestSubmissionInboundPortURI, requestNotificationInboundPortURI, requestNotificationOutboundPortURI,requestDispatcherDynamicStateDataInboundPortURI);
+		this(
+				AbstractPort.generatePortURI(),
+				managementInboundPortURI,
+				requestSubmissionInboundPortURI,
+				requestNotificationInboundPortURI,
+				requestNotificationOutboundPortURI,
+				requestDispatcherDynamicStateDataInboundPortURI);
 	}
 	
 	@Override
@@ -149,6 +183,7 @@ implements RequestSubmissionHandlerI,
 		}
 	}
 	
+	@Override
 	public void associateVirtualMachine(final String virtualMachineRequestSubmissionInboundPortURI) throws Exception
 	{
 		if (this.virtualMachinesRequestSubmissionsInboundPortURIs.contains(virtualMachineRequestSubmissionInboundPortURI)) {
@@ -173,6 +208,7 @@ implements RequestSubmissionHandlerI,
 		logMessage("a new virtual machine (submission input port:'"+ virtualMachineRequestSubmissionInboundPortURI + "') has been associated to " + this.toString());
 	}
 
+	@Override
 	public void dissociateVirtualMachine(final String virtualMachineRequestSubmissionInboundPortURI) throws Exception
 	{
 		if (!this.virtualMachinesRequestSubmissionsInboundPortURIs.contains(virtualMachineRequestSubmissionInboundPortURI)) {
@@ -197,21 +233,6 @@ implements RequestSubmissionHandlerI,
 	@Override
 	public void acceptRequestSubmission(final RequestI r) throws Exception
 	{
-//		if (rsops.isEmpty()) {
-//			throw new Exception("request '" + r.getRequestURI() + "' cant be handled because no vm is connected to the " + this.toString());
-//		}
-//		
-//		RequestSubmissionOutboundPort rsop = rsops.removeFirst(); 
-//		
-//		if (!rsop.connected()) {
-//			throw new Exception("port '"+rsop.getPortURI()+"' of "+this.toString()+" is disconnected, that should not happen");
-//		}
-//
-//		rsop.submitRequest(r);
-//		logMessage("request '" + r.getRequestURI() + "' handled by the " + this.toString());
-//		
-//		// the port is pushed at the last position of the list, performing a good ports turnover
-//		rsops.addLast(rsop);
 	}
 
 	@Override
@@ -230,6 +251,7 @@ implements RequestSubmissionHandlerI,
 		// Keep start time
 		executionTimeRequest.put(r.getRequestURI(), System.currentTimeMillis());
 		
+		// Send request to VM
 		rsop.submitRequestAndNotify(r);
 		logMessage("request '" + r.getRequestURI() + "' submitted to " + this.toString());
 
@@ -275,7 +297,9 @@ implements RequestSubmissionHandlerI,
 	
 	private Double getAvg()
 	{
-		logMessage(this.toString() + " getAvg : " + executionTimeRequestSum + " - " + nbRequests);
+		//logMessage(this.toString() + " getAvg : " + executionTimeRequestSum + " - " + nbRequests);
+		
+		// We can't compute the average if nbRequests is reset to 0
 		return this.nbRequests <= 0 ? null : this.executionTimeRequestSum / this.nbRequests;
 	}
 	
@@ -301,7 +325,7 @@ implements RequestSubmissionHandlerI,
 	public void	sendDynamicState() throws Exception
 	{
 		if (this.rddsdip.connected()) {
-			RequestDispatcherDynamicStateI rdds = this.getDynamicState() ;
+			RequestDispatcherDynamicStateI rdds = this.getDynamicState();
 			
 			if (rdds != null) {
 				this.rddsdip.send(rdds) ;

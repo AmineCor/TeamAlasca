@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.teamalasca.requestdispatcher.RequestDispatcher;
+import com.teamalasca.requestdispatcher.connectors.RequestDispatcherManagementConnector;
+import com.teamalasca.requestdispatcher.ports.RequestDispatcherManagementOutboundPort;
 
 import fr.upmc.components.AbstractComponent;
 import fr.upmc.components.connectors.DataConnector;
@@ -47,40 +49,42 @@ extends		AbstractCVM
 	// Predefined URI of the different ports visible at the component assembly
 	// level.
 
-	public static final String	ComputerServicesInboundPortURI = "cs-ibp" ;
-	public static final String	ComputerServicesOutboundPortURI = "cs-obp" ;
-	public static final String	ComputerStaticStateDataInboundPortURI = "css-dip" ;
-	public static final String	ComputerStaticStateDataOutboundPortURI = "css-dop" ;
-	public static final String	ComputerDynamicStateDataInboundPortURI = "cds-dip" ;
-	public static final String	ComputerDynamicStateDataOutboundPortURI = "cds-dop" ;
+	public static final String ComputerServicesInboundPortURI = "cs-ibp" ;
+	public static final String ComputerServicesOutboundPortURI = "cs-obp" ;
+	public static final String ComputerStaticStateDataInboundPortURI = "css-dip" ;
+	public static final String ComputerStaticStateDataOutboundPortURI = "css-dop" ;
+	public static final String ComputerDynamicStateDataInboundPortURI = "cds-dip" ;
+	public static final String ComputerDynamicStateDataOutboundPortURI = "cds-dop" ;
 
 	// Request dispatcher ports
+	public static final String RequestDispatcherManagementInboundPortURI = "rd-mip";
+	public static final String RequestDispatcherManagementOutboundPortURI = "rd-mop";
 	public static final String RequestDispatcherRequestSubmissionInboundPortURI = "rd-rsip";
 	public static final String RequestDispatcherRequestNotificationInboundPortURI = "rd-rnip";
 	public static final String RequestDispatcherRequestNotificationOutboundPortURI = "rd-rnop";
 	public static final String RequestDispatcherDynamicStateDataInboundPortURI = "rd-dsdip";
 
 	// Request generator ports
-	public static final String	RequestGeneratorManagementInboundPortURI = "rg-mip" ;
-	public static final String	RequestGeneratorManagementOutboundPortURI = "rg-mop" ;
-	public static final String	RequestGeneratorRequestNotificationInboundPortURI = "rg-rnip" ;
+	public static final String RequestGeneratorManagementInboundPortURI = "rg-mip" ;
+	public static final String RequestGeneratorManagementOutboundPortURI = "rg-mop" ;
+	public static final String RequestGeneratorRequestNotificationInboundPortURI = "rg-rnip" ;
 	public static final String RequestGeneratorRequestSubmissionOutboundPortURI = "rg-rsob" ;
 
 	// Virtual machines ports
-	public static final String	VirtualMachineRequestSubmissionInboundPortURI1 = "vm-rsip1" ;
-	public static final String	VirtualMachineRequestSubmissionInboundPortURI2 = "vm-rsip2" ;
-	public static final String	VirtualMachineRequestSubmissionInboundPortURI3 = "vm-rsip3" ;
+	public static final String VirtualMachineRequestSubmissionInboundPortURI1 = "vm-rsip1" ;
+	public static final String VirtualMachineRequestSubmissionInboundPortURI2 = "vm-rsip2" ;
+	public static final String VirtualMachineRequestSubmissionInboundPortURI3 = "vm-rsip3" ;
 	public static final String VirtualMachineRequestNotificationOutboundPortURI1 = "vm-rnop1" ;
 	public static final String VirtualMachineRequestNotificationOutboundPortURI2="vm-rnop2";
 	public static final String VirtualMachineRequestNotificationOutboundPortURI3="vm-rnop3";
 
 	// Virtual machines management ports
-	public static final String	ApplicationVMManagementInboundPortURI1 = "avm-ibp" ;
+	public static final String ApplicationVMManagementInboundPortURI1 = "avm-ibp" ;
 	public static final String ApplicationVMManagementInboundPortURI2="avm-ibp1";
 	public static final String ApplicationVMManagementInboundPortURI3="avm-ibp2";
-	public static final String	ApplicationVMManagementOutboundPortURI = "avm-obp" ;
-	public static final String	ApplicationVMManagementOutboundPortURI1 = "avm-obp1";
-	public static final String	ApplicationVMManagementOutboundPortURI2 = "avm-obp2";
+	public static final String ApplicationVMManagementOutboundPortURI = "avm-obp" ;
+	public static final String ApplicationVMManagementOutboundPortURI1 = "avm-obp1";
+	public static final String ApplicationVMManagementOutboundPortURI2 = "avm-obp2";
 
 
 	/** Request Dispatcher **/
@@ -90,23 +94,23 @@ extends		AbstractCVM
 	protected RequestGenerator requestGenerator;
 
 	/** Port connected to the computer component to access its services.	*/
-	protected ComputerServicesOutboundPort				csPort ;
+	protected ComputerServicesOutboundPort csPort;
 	/** Port connected to the computer component to receive the static
 	 *  state data.															*/
-	protected ComputerStaticStateDataOutboundPort		cssPort ;
+	protected ComputerStaticStateDataOutboundPort cssPort;
 	/** Port connected to the computer component to receive the dynamic
 	 *  state data.															*/
-	protected ComputerDynamicStateDataOutboundPort		cdsPort ;
+	protected ComputerDynamicStateDataOutboundPort cdsPort;
 	/** Port connected to the first virtual machine to manage its cores */
-	protected ApplicationVMManagementOutboundPort		avmmop1 ;
+	protected ApplicationVMManagementOutboundPort avmmop1;
 	/** Port connected to the second virtual machine to manage its cores */
-	protected ApplicationVMManagementOutboundPort		avmmop2 ;
+	protected ApplicationVMManagementOutboundPort avmmop2;
 	/** Port connected to the third virtual machine to manage its cores */
-	protected ApplicationVMManagementOutboundPort       avmmop3 ;
+	protected ApplicationVMManagementOutboundPort avmmop3;
 
 	/** Port connected to the request generator component to manage its
 	 *  execution (starting and stopping the request generation).			*/
-	protected RequestGeneratorManagementOutboundPort	rgmop ;
+	protected RequestGeneratorManagementOutboundPort rgmop;
 
 	// ------------------------------------------------------------------------
 	// Component virtual machine constructors
@@ -247,12 +251,28 @@ extends		AbstractCVM
 		// --------------------------------------------------------------------
 		// Creating the requestDispatcher component.
 		// --------------------------------------------------------------------
-		requestDispatcher = new RequestDispatcher("rd1",RequestDispatcherRequestSubmissionInboundPortURI, RequestDispatcherRequestNotificationInboundPortURI, RequestDispatcherRequestNotificationOutboundPortURI,RequestDispatcherDynamicStateDataInboundPortURI);
+		requestDispatcher = new RequestDispatcher(
+				"rd1",
+				RequestDispatcherManagementInboundPortURI,
+				RequestDispatcherRequestSubmissionInboundPortURI,
+				RequestDispatcherRequestNotificationInboundPortURI,
+				RequestDispatcherRequestNotificationOutboundPortURI,
+				RequestDispatcherDynamicStateDataInboundPortURI);
 
+		// Create a mock up port to manage the request dispatcher
+		RequestDispatcherManagementOutboundPort rdmop = new RequestDispatcherManagementOutboundPort(
+									RequestDispatcherManagementOutboundPortURI,
+									new AbstractComponent() {});
+		rdmop.publishPort();
+		rdmop.doConnection(
+					RequestDispatcherManagementInboundPortURI,
+					RequestDispatcherManagementConnector.class.getCanonicalName()) ;
+		
+		
 		// Associating 3 VMs to the request dispatcher
-		requestDispatcher.associateVirtualMachine(VirtualMachineRequestSubmissionInboundPortURI1);
-		requestDispatcher.associateVirtualMachine(VirtualMachineRequestSubmissionInboundPortURI2);
-		requestDispatcher.associateVirtualMachine(VirtualMachineRequestSubmissionInboundPortURI3);
+		rdmop.associateVirtualMachine(VirtualMachineRequestSubmissionInboundPortURI1);
+		rdmop.associateVirtualMachine(VirtualMachineRequestSubmissionInboundPortURI2);
+		rdmop.associateVirtualMachine(VirtualMachineRequestSubmissionInboundPortURI3);
 
 		// Connecting VMs notifications ports with the one of the request dispatcher
 

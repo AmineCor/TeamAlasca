@@ -175,7 +175,6 @@ extends		AbstractCVM
 		app = new RGApplication("MyApplication");
 		this.addDeployedComponent(app);
 		
-		// TODO Mohamed Amine corchi Jerusalem KO
 	    AdmissionController ac = new AdmissionController ("AD", ComputerServicesOutboundPortURI,ComputerDynamicStateDataInboundPortURI);
 		this.addDeployedComponent(ac);
 		app.doConnectionAdmissionControler("AD_asibp");
