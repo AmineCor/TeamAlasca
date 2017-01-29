@@ -6,7 +6,9 @@ import com.teamalasca.admissioncontroller.interfaces.AdmissionNotificationI;
 import fr.upmc.components.connectors.AbstractConnector;
 
 
-public class AdmissionNotificationConnector extends AbstractConnector implements AdmissionNotificationI
+public class AdmissionNotificationConnector
+extends AbstractConnector
+implements AdmissionNotificationI
 {
 
 	@Override

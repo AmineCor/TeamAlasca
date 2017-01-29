@@ -6,7 +6,9 @@ import com.teamalasca.admissioncontroller.interfaces.AdmissionRequestSubmitterI;
 import fr.upmc.components.connectors.AbstractConnector;
 
 
-public class AdmissionRequestConnector extends AbstractConnector implements AdmissionRequestSubmitterI
+public class AdmissionRequestConnector
+extends AbstractConnector
+implements AdmissionRequestSubmitterI
 {
 
 	@Override
