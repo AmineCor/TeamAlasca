@@ -32,56 +32,90 @@ import fr.upmc.datacenter.software.applicationvm.connectors.ApplicationVMManagem
 import fr.upmc.datacenter.software.applicationvm.ports.ApplicationVMManagementOutboundPort;
 import fr.upmc.datacenter.software.connectors.RequestNotificationConnector;
 
-
+/**
+ * The class <code>AutonomicController</code> is a component to perform
+ * adaptations depending of the execution times of the requests.
+ * 
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
+ * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
+ */
 public final class AutonomicController
 extends AbstractComponent
 implements AutonomicControllerServicesI,
 		   RequestDispatcherStateDataConsumerI
 {
-
+	/** List of averages from the request dispatcher to compute the moving average. */
+	private List<Double> requestExecutionAverages;
+	
+	/** The "N" value to compute moving average. */
 	private final static int MAX_SIZE_AVERAGE_LIST = 3;
+	
+	/** Default core number to allocate cores. */
 	private final static int DEFAULT_CORE_NUMBER = 4;
 	
+	/** Threshold to do adaptation. */
 	private static final double THRESHOLD = 1500.0;
+	
+	/** Threshold frequency to do adaptation. */
 	private static final double THRESHOLD_FREQUENCY = 0.20;
+	
+	/** Threshold core to do adaptation. */
 	private static final double THRESHOLD_CORE = 0.40;
+	
+	/** Threshold virtual machine to do adaptation. */
 	private static final double THRESHOLD_VM = 0.80;
 	
+	/** Delta frequency to increase or decrease frequency of a core. */
 	private static final int DELTA_FREQUENCY = 100;
 
+	/** Do adaptation every 15 seconds. */
 	private static final int PERIODIC_INTERVAL_ADAPTATION = 15000;
+	
+	/** Push data from the request dispatcher every 5 seconds. */
 	private static final int PUSHING_INTERVAL_REQUEST_DISPATCHER = 5000;
 
-	/** A private URI to identify this autonomic controller, for debug purpose */
+	/** A private URI to identify this autonomic controller, for debug purpose. */
 	private final String URI;
 
-	/** URI of the dispatcher associated with this autonomic controller */
+	/** URI of the dispatcher associated with this autonomic controller. */
 	private String requestDispatcherURI;
 	
-	/** URI of the dispatcher associated with this autonomic controller */
+	/** URI of the dispatcher associated with this autonomic controller. */
 	private String requestDispatcherRequestNotificationInboundPortURI;
 
 	/** Inbound port offering the management interface.	*/
 	private AutonomicControllerServicesInboundPort acsip;
 	
-	/** Outbound port connected to the request dispatcher management */
+	/** Outbound port connected to the request dispatcher management. */
 	private RequestDispatcherManagementOutboundPort rdmop;
 	
-	/** Outbound port connected to the request dispatcher component to receive its data */
+	/** Outbound port connected to the request dispatcher component to receive its data. */
 	private RequestDispatcherDynamicStateDataOutboundPort rddsdop;
 
-	/** Outbound port connected to the computer component to receive its data */
+	/** Outbound port connected to the computer component to receive its data. */
 	private ComputerDynamicStateDataOutboundPort cdsdop;
 
-	/** Outbound port connected to the computer to manage its cores **/
+	/** Outbound port connected to the computer to manage its cores. **/
 	private CoreManagementOutboundPort cmop;
 
-	/** Internal ports to manage the application virtual machines allocated */
+	/** Internal ports to manage the application virtual machines allocated. */
 	private Map<ApplicationVMManagementOutboundPort, ApplicationVMData> avmmop;
 
-	/** List of averages from the request dispatcher to compute the moving average */
-	private List<Double> requestExecutionAverages;
-
+	/**
+	 * Construct an <code>AutonomicController</code>.
+	 * 
+	 * @param autonomicControllerURI the autonomic controller URI.
+	 * @param autonomicControllerServicesInboundPortURI the autonomic controller services inbound port URI.
+	 * @param computerURI the computer URI.
+	 * @param computerDynamicStateDataInboundPortURI the computer dynamic state data inbound port URI.
+	 * @param manageCoreInboundPortURI the management core inbound port URI.
+	 * @param requestDispatcherURI the request dispatcher URI.
+	 * @param requestDispatcherManagementInboundPortURI the request dispatcher management inbound port URI.
+	 * @param requestDispatcherDynamicStateDataInboundPortURI the request dispatcher dynamic state data inbound port URI.
+	 * @param requestDispatcherRequestNotificationInboundPortURI the request dispatcher request notification inbound port URI.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	public AutonomicController(
 			final String autonomicControllerURI,
 			final String autonomicControllerServicesInboundPortURI,
@@ -150,6 +184,19 @@ implements AutonomicControllerServicesI,
 		allocateVm();
 	}
 
+	/**
+	 * Construct an <code>AutonomicController</code>.
+	 * 
+	 * @param autonomicControllerServicesInboundPortURI the autonomic controller services inbound port URI.
+	 * @param computerURI the computer URI.
+	 * @param computerDynamicStateDataInboundPortURI the computer dynamic state data inbound port URI.
+	 * @param manageCoreInboundPortURI the management core inbound port URI.
+	 * @param requestDispatcherURI the request dispatcher URI.
+	 * @param requestDispatcherManagementInboundPortURI the request dispatcher management inbound port URI.
+	 * @param requestDispatcherDynamicStateDataInboundPortURI the request dispatcher dynamic state data inbound port URI.
+	 * @param requestDispatcherRequestNotificationInboundPortURI the request dispatcher request notification inbound port URI.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	public AutonomicController(
 			final String autonomicControllerServicesInboundPortURI,
 			final String computerURI,
@@ -173,7 +220,13 @@ implements AutonomicControllerServicesI,
 				requestDispatcherRequestNotificationInboundPortURI);
 	}
 
-	/** Connecting the autonomic controller with the request dispatcher */
+	/**
+	 * Connect the autonomic controller with the request dispatcher.
+	 * 
+	 * @param requestDispatcherURI the request dispatcher URI.
+	 * @param requestDispatcherDynamicStateDataInboundPortURI the request dispatcher dynamic state data inbound port URI.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	public void doConnectionWithRequestDispatcher(
 			final String requestDispatcherURI,
 			final String requestDispatcherDynamicStateDataInboundPortURI)
@@ -188,7 +241,14 @@ implements AutonomicControllerServicesI,
 		this.rddsdop.startUnlimitedPushing(PUSHING_INTERVAL_REQUEST_DISPATCHER);
 	}
 
-	/** Connecting the admission controller with ports of a computer component */
+	/**
+	 * Connect the autonomic controller with ports of a computer component.
+	 * 
+	 * @param computerURI the computer URI.
+	 * @param computerDynamicStateDataInboundPortURI the computer dynamic state data inbound port URI.
+	 * @param manageCoreInboundPortURI the management core inbound port URI.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	private void doConnectionWithComputer(
 			final String computerURI,
 			final String computerDynamicStateDataInboundPortURI,
@@ -198,6 +258,9 @@ implements AutonomicControllerServicesI,
 		this.cmop.doConnection(manageCoreInboundPortURI, CoreManagementConnector.class.getCanonicalName());
 	}
 
+	/** 
+	 * @see com.teamalasca.requestdispatcher.interfaces.RequestDispatcherStateDataConsumerI#acceptRequestDispatcherDynamicData(java.lang.String, com.teamalasca.requestdispatcher.interfaces.RequestDispatcherDynamicStateI)
+	 */
 	@Override
 	public void acceptRequestDispatcherDynamicData(
 			String dispatcherURI,
@@ -222,6 +285,11 @@ implements AutonomicControllerServicesI,
 		}		
 	}
 
+	/**
+	 * Allocate a new virtual machine.
+	 * 
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	private void allocateVm() throws Exception
 	{
 		//------------- Create the application virtual machine ------------------/
@@ -252,6 +320,12 @@ implements AutonomicControllerServicesI,
 		this.allocateCores(AVMManagementOutboundPort, DEFAULT_CORE_NUMBER);
 	}
 	
+	/**
+	 * Release a virtual machine.
+	 * 
+	 * @param AVMManagementOutboundPort the application virtual machine management outbound port.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	private void releaseVm(final ApplicationVMManagementOutboundPort AVMManagementOutboundPort) throws Exception
 	{
 		// dissociate vm from the request dispatcher
@@ -260,6 +334,13 @@ implements AutonomicControllerServicesI,
 		// remove the vm
 	}
 	
+	/**
+	 * Allocate cores.
+	 * 
+	 * @param AVMManagementOutboundPort the application virtual machine management outbound port.
+	 * @param nbCores the number of cores to allocate.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	private void allocateCores(final ApplicationVMManagementOutboundPort AVMManagementOutboundPort, int nbCores) throws Exception
 	{
 		// allocate its cores
@@ -270,11 +351,24 @@ implements AutonomicControllerServicesI,
 		this.avmmop.get(AVMManagementOutboundPort).addCores(ac);
 	}
 
+	/**
+	 * Allocate one core.
+	 * 
+	 * @param AVMManagementOutboundPort the application virtual machine management outbound port.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	private void allocateCore(final ApplicationVMManagementOutboundPort AVMManagementOutboundPort) throws Exception
 	{
 		this.allocateCores(AVMManagementOutboundPort, 1);
 	}
 	
+	/**
+	 * Release a core.
+	 * 
+	 * @param AVMManagementOutboundPort the application virtual machine management outbound port.
+	 * @param ac the allocated core to release.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	private void releaseCore(final ApplicationVMManagementOutboundPort AVMManagementOutboundPort, final AllocatedCore ac) throws Exception
 	{
 		// release core
@@ -284,6 +378,11 @@ implements AutonomicControllerServicesI,
 		this.avmmop.get(AVMManagementOutboundPort).removeCore(ac);
 	}
 	
+	/**
+	 * Select a random virtual machine.
+	 * 
+	 * @return a random virtual machine.
+	 */
 	private ApplicationVMManagementOutboundPort selectRandomVm()
 	{
 		// Select a random index
@@ -301,6 +400,11 @@ implements AutonomicControllerServicesI,
 		return null;
 	}
 	
+	/**
+	 * Compute the moving average.
+	 * 
+	 * @return the moving average.
+	 */
 	public Double computeMovingAverage()
 	{
 		synchronized (requestExecutionAverages) {
@@ -321,6 +425,9 @@ implements AutonomicControllerServicesI,
 		}
 	}
 	
+	/**
+	 * @see com.teamalasca.autonomiccontroller.interfaces.AutonomicControllerServicesI#doPeriodicAdaptation()
+	 */
 	@Override
 	public void doPeriodicAdaptation() throws Exception
 	{
@@ -422,6 +529,9 @@ implements AutonomicControllerServicesI,
 				}, PERIODIC_INTERVAL_ADAPTATION, TimeUnit.MILLISECONDS);
 	}
 
+	/** 
+	 * @see java.lang.Object#toString()
+	 */
 	@Override
 	public String toString()
 	{

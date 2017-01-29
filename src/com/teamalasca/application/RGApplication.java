@@ -15,11 +15,12 @@ import fr.upmc.datacenter.software.interfaces.RequestI;
 import fr.upmc.datacenter.software.interfaces.RequestNotificationHandlerI;
 import fr.upmc.datacenterclient.requestgenerator.RequestGenerator;
 
-
 /**
+ * The class <code>RGApplication</code> represents a client application.
  * 
- * @author Corchi - George
- *
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
+ * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
  */
 public class RGApplication
 extends AbstractComponent
@@ -27,15 +28,29 @@ implements AdmissionNotificationHandlerI,
 		   RequestNotificationHandlerI
 {
 
+	/** Request generator for the application. */
 	private RequestGenerator rg;
+	
+	/** Component URI. */
 	private String URI;
+	
+	/** Admission notification inbound port. */
 	private AdmissionNotificationInboundPort anibp;
+	
+	/** Admission request outbound port. */
 	private AdmissionRequestOutboundPort asop;
 
+	/**
+	 * Construct a <code>RGApplication</code>.
+	 * 
+	 * @param uri the component URI.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	public RGApplication(String uri) throws Exception
 	{
-		super();
+		super(1, 1);
 
+		// create request generator
 		URI = uri;
 		rg = new RequestGenerator(
 				URI + "_rg",		// generator component URI
@@ -49,6 +64,7 @@ implements AdmissionNotificationHandlerI,
 		//rg.toggleLogging();
 		//rg.toggleTracing();
 		
+		// connect ports
 		this.addOfferedInterface(AdmissionNotificationI.class);
 		this.anibp = new AdmissionNotificationInboundPort(URI + "_anibp", this) ;
 		this.addPort(this.anibp) ;
@@ -60,13 +76,11 @@ implements AdmissionNotificationHandlerI,
 		this.asop.publishPort() ;
 	}
 
-	@Override
-	public void acceptRequestTerminationNotification(RequestI r)
-			throws Exception 
-	{
-		rg.acceptRequestTerminationNotification(r);
-	}
-
+	/**
+	 * Start the application.
+	 * 
+	 * @throws Exception the exception/
+	 */
 	public void	startApp() throws Exception
 	{
 		logMessage(this.toString() + " starts");
@@ -74,11 +88,20 @@ implements AdmissionNotificationHandlerI,
 		this.asop.handleAdmissionRequestAndNotify(request);
 	}
 
+	/**
+	 * Connect the application with the admission controller.
+	 * 
+	 * @param asibp the admission request submitter inbound port.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	public void doConnectionAdmissionControler(String asibp) throws Exception
 	{
 		this.asop.doConnection(asibp, AdmissionRequestConnector.class.getCanonicalName());
 	}
-
+	
+	/** 
+	 * @see com.teamalasca.admissioncontroller.interfaces.AdmissionNotificationHandlerI#acceptAdmissionNotification(com.teamalasca.admissioncontroller.interfaces.AdmissionRequestI)
+	 */
 	@Override
 	public void acceptAdmissionNotification(AdmissionRequestI request) throws Exception 
 	{
@@ -88,7 +111,19 @@ implements AdmissionNotificationHandlerI,
 			rg.startGeneration();
 		}
 	}
+	
+	/** 
+	 * @see fr.upmc.datacenter.software.interfaces.RequestNotificationHandlerI#acceptRequestTerminationNotification(fr.upmc.datacenter.software.interfaces.RequestI)
+	 */
+	@Override
+	public void acceptRequestTerminationNotification(RequestI r) throws Exception 
+	{
+		rg.acceptRequestTerminationNotification(r);
+	}
 
+	/** 
+	 * @see java.lang.Object#toString()
+	 */
 	@Override
 	public String toString()
 	{

@@ -13,16 +13,43 @@ import fr.upmc.datacenter.hardware.processors.interfaces.ProcessorManagementI;
 import fr.upmc.datacenter.hardware.processors.interfaces.ProcessorStaticStateI;
 import fr.upmc.datacenter.hardware.processors.ports.ProcessorManagementOutboundPort;
 
-
+/**
+ * The class <code>Computer</code> implements a component that represents a
+ * computer in a data center.
+ * 
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
+ * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
+ */
 public class Computer
 extends fr.upmc.datacenter.hardware.computers.Computer
 implements CoreManagementI
 {
-
+	/** Core management inbound port. */
 	final private CoreManagementInboundPort cmip;
+	
+	/** Processor management outbound port. */
 	final private ProcessorManagementOutboundPort pmop;
+	
+	/** Current frequencies for each core. */
 	private int[] currentCoreFrequencies;
 	
+	/**
+	 * Construct a <code>Computer</code>.
+	 * 
+	 * @param computerURI the computer URI.
+	 * @param possibleFrequencies the possible frequencies for cores.
+	 * @param processingPower the Mips for the different possible frequencies.
+	 * @param defaultFrequency the default frequency at which the cores run.
+	 * @param maxFrequencyGap the max frequency gap among cores of the same processor.
+	 * @param numberOfProcessors the number of processors in the computer.
+	 * @param numberOfCores the number of cores per processor (homogeneous).
+	 * @param computerServicesInboundPortURI the URI of the computer service inbound port.
+	 * @param computerStaticStateDataInboundPortURI the URI of the computer static data notification inbound port.
+	 * @param computerDynamicStateDataInboundPortURI the URI of the computer dynamic data notification inbound port.
+	 * @param coreManagerInboundPortURI the core management inbound port URI.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	public Computer(
 			final String computerURI,
 			final Set<Integer> possibleFrequencies,
@@ -48,6 +75,7 @@ implements CoreManagementI
 				computerStaticStateDataInboundPortURI,
 				computerDynamicStateDataInboundPortURI);
 		
+		// connect ports
 		this.cmip = new CoreManagementInboundPort(coreManagerInboundPortURI,this);
 		this.addPort(cmip);
 		this.cmip.publishPort();
@@ -58,12 +86,32 @@ implements CoreManagementI
 		this.pmop.publishPort();
 		this.addRequiredInterface(ProcessorManagementI.class);
 		
-		// Get data from processors
+		// get data from processors
 		for (final Processor p : processors) {
 			p.startUnlimitedPushing(500);
 		}
 	}
+	
+	/** 
+	 * @see fr.upmc.datacenter.hardware.processors.interfaces.ProcessorStateDataConsumerI#acceptProcessorStaticData(java.lang.String, fr.upmc.datacenter.hardware.processors.interfaces.ProcessorStaticStateI)
+	 */
+	@Override
+	public void acceptProcessorStaticData(String processorURI, ProcessorStaticStateI ss) throws Exception
+	{
+	}
+	
+	/** 
+	 * @see fr.upmc.datacenter.hardware.processors.interfaces.ProcessorStateDataConsumerI#acceptProcessorDynamicData(java.lang.String, fr.upmc.datacenter.hardware.processors.interfaces.ProcessorDynamicStateI)
+	 */
+	@Override
+	public void acceptProcessorDynamicData(String processorURI, ProcessorDynamicStateI cds) throws Exception
+	{
+		currentCoreFrequencies = cds.getCurrentCoreFrequencies();
+	}
 
+	/**
+	 * @see com.teamalasca.computer.interfaces.CoreManagementI#changeFrequency(fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore, int)
+	 */
 	@Override
 	public void changeFrequency(final AllocatedCore core, final int frequency) throws Exception
 	{
@@ -79,23 +127,18 @@ implements CoreManagementI
 		pmop.doDisconnection();
 	}
 	
-	@Override
-	public void acceptProcessorStaticData(String processorURI, ProcessorStaticStateI ss) throws Exception
-	{
-	}
-	
-	@Override
-	public void acceptProcessorDynamicData(String processorURI, ProcessorDynamicStateI cds) throws Exception
-	{
-		currentCoreFrequencies = cds.getCurrentCoreFrequencies();
-	}
-
+	/**
+	 * @see com.teamalasca.computer.interfaces.CoreManagementI#getCurrentFrequency(fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore)
+	 */
 	@Override
 	public int getCurrentFrequency(AllocatedCore core) throws Exception
 	{
 		return currentCoreFrequencies[core.coreNo];
 	}
 	
+	/** 
+	 * @see java.lang.Object#toString()
+	 */
 	@Override
 	public String toString()
 	{

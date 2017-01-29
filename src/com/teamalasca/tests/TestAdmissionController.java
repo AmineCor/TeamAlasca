@@ -19,13 +19,14 @@ import fr.upmc.datacenter.hardware.computers.ports.ComputerServicesOutboundPort;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerStaticStateDataOutboundPort;
 import fr.upmc.datacenter.hardware.processors.Processor;
 import fr.upmc.datacenter.hardware.tests.ComputerMonitor;
-import fr.upmc.datacenterclient.tests.TestRequestGenerator;
-
 
 /**
- * This class is a consistent components assembly allowing testing the admission controller
- * component.
- * Strongly inspired by the class {@link TestRequestGenerator}
+ * The class <code>TestAdmissionController</code> is a consistent components assembly
+ * allowing testing <code>AdmissionController</code> components.
+ * 
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
+ * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
  */
 public class TestAdmissionController
 extends	AbstractCVM
@@ -231,9 +232,9 @@ extends	AbstractCVM
 	}
 
 	/**
-	 * generate requests for 20 seconds and then stop generating.
+	 * Generate requests for 20 seconds and then stop generating.
 	 *
-	 * @throws Exception
+	 * @throws Exception throws an exception if an error occured..
 	 */
 	public void	testScenario() throws Exception
 	{
@@ -250,7 +251,7 @@ extends	AbstractCVM
 	}
 
 	/**
-	 * execute the test application.
+	 * Execute the test application.
 	 * 
 	 * @param args	command line arguments, disregarded here.
 	 */

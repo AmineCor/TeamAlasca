@@ -8,26 +8,51 @@ import fr.upmc.components.ComponentI;
 import fr.upmc.components.ports.AbstractInboundPort;
 
 
+/**
+ * The class <code>AdmissionRequestInboundPort</code> implements the
+ * inbound port offering the interface <code>AdmissionRequestSubmitterI</code>.
+ * 
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
+ * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
+ */
 public class AdmissionRequestInboundPort
 extends AbstractInboundPort
 implements AdmissionRequestSubmitterI
 {
 	
 	/**
-	 * 
+	 * A unique serial version identifier.
+	 * @see java.io.Serializable#serialVersionUID
 	 */
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * Construct an <code>AdmissionRequestInboundPort</code>.
+	 * 
+	 * @param owner the owner component.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	public AdmissionRequestInboundPort(ComponentI owner) throws Exception
 	{
 		super(AdmissionRequestSubmitterI.class, owner);
 	}
 	
-	public AdmissionRequestInboundPort(String URI, ComponentI owner) throws Exception
+	/**
+	 * Construct an <code>AdmissionRequestInboundPort</code>.
+	 * 
+ 	 * @param uri the uri of the port.
+	 * @param owner the owner component.
+	 * @throws Exception throws an exception if an error occured..
+	 */
+	public AdmissionRequestInboundPort(String uri, ComponentI owner) throws Exception
 	{
-		super(URI,AdmissionRequestSubmitterI.class, owner);
+		super(uri, AdmissionRequestSubmitterI.class, owner);
 	}
 	
+	/**
+	 * @see com.teamalasca.admissioncontroller.interfaces.AdmissionRequestSubmitterI#submitAdmissionRequest(com.teamalasca.admissioncontroller.interfaces.AdmissionRequestI)
+	 */
 	@Override
 	public void submitAdmissionRequest(final AdmissionRequestI a) throws Exception
 	{
@@ -42,6 +67,9 @@ implements AdmissionRequestSubmitterI
 				});	
 	}
 	
+	/**
+	 * @see com.teamalasca.admissioncontroller.interfaces.AdmissionRequestSubmitterI#submitAdmissionRequestAndNotify(com.teamalasca.admissioncontroller.interfaces.AdmissionRequestI)
+	 */
 	@Override
 	public void submitAdmissionRequestAndNotify(final AdmissionRequestI a) throws Exception
 	{

@@ -31,11 +31,14 @@ import fr.upmc.datacenter.software.ports.RequestNotificationOutboundPort;
 import fr.upmc.datacenter.software.ports.RequestSubmissionInboundPort;
 import fr.upmc.datacenter.software.ports.RequestSubmissionOutboundPort;
 
-
 /**
- * A request dispatcher is a component receiving request submissions from
- * a given application, and dispatching these requests to the different VM
+ * The class <code>RequestDispatcher</code> is a component receiving request submissions from
+ * a given application, and dispatching these requests to the different virtual machines
  * allocated for this application.
+ * 
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
+ * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
  */
 public class RequestDispatcher
 extends AbstractComponent 
@@ -45,49 +48,60 @@ implements RequestDispatcherManagementI,
 		   PushModeControllerI
 {
 
-	/** A private URI to identify this request dispatcher, for debug purpose */
+	/** A private URI to identify this request dispatcher, for debug purpose. */
 	private final String URI;
 
-	/** URIs of the virtual machines inbound ports allocated to this request dispatcher */
+	/** URIs of the virtual machines inbound ports allocated to this request dispatcher. */
 	private final List<String> virtualMachinesRequestSubmissionsInboundPortURIs;
 
 	/** Outbound ports of the request dispatcher connected with the virtual machines allocated for execute the application.
-	 * A linked list is used in order to deal with our dispatching policy */
+	 * A linked list is used in order to deal with our dispatching policy. */
 	private final LinkedList<RequestSubmissionOutboundPort> rsops;
 
 	/** Inbound port offering the management interface.	*/
 	protected RequestDispatcherManagementInboundPort rdmip ;
 	
-	/** Inbound port of the request dispatcher receiving notifications from the virtual machines */
+	/** Inbound port of the request dispatcher receiving notifications from the virtual machines. */
 	private final RequestNotificationInboundPort rnip;
 
-	/** Inbound port of the request dispatcher connected with the application */
+	/** Inbound port of the request dispatcher connected with the application. */
 	private final RequestSubmissionInboundPort rsip;
 
-	/** Outbound port  of the request dispatcher sending notifications to the application */
+	/** Outbound port  of the request dispatcher sending notifications to the application. */
 	protected final RequestNotificationOutboundPort rnop;
 	
-	/** Request dispatcher data inbound port through which it pushes its dynamic data */
+	/** Request dispatcher data inbound port through which it pushes its dynamic data. */
 	private RequestDispatcherDynamicStateDataInboundPort rddsdip;
 	
-	/** Map to keep execution time for each request */
+	/** Map to keep execution time for each request. */
 	private Map<String, Long> executionTimeRequest;
 	
-	/** Sum of all exection time of each request */
+	/** Sum of all exection time of each request. */
 	private double executionTimeRequestSum;
 	
-	/** Number of requests */
+	/** Number of requests. */
 	private int nbRequests;
 
-	/** Counter of total called "getAvg" */
+	/** Counter of total called "getAvg". */
 	private int counterAvgRequest;
 	
-	/** We definie a limit to avoid constant average value */
+	/** We definie a limit to avoid constant average value. */
 	private static final int LIMIT_RESET_COUNTER_AVG = 10;
 	
-	/** Future of the task scheduled to push dynamic data */
+	/** Future of the task scheduled to push dynamic data. */
 	private ScheduledFuture<?> pushingFuture;
 	
+	/**
+	 * Construct a <code>RequestDispatcher</code>.
+	 * 
+	 * @param requestDispatcherURI the request dispatcher URI.
+	 * @param requestDispatcherManagementInboundPortURI the request dispatcher management inbound port URI.
+	 * @param requestSubmissionInboundPortURI the request submission inbound port URI.
+	 * @param requestNotificationInboundPortURI the request notification inbound port URI.
+	 * @param requestNotificationOutboundPortURI the request notification outbound port URI.
+	 * @param requestDispatcherDynamicStateDataInboundPortURI the request dispatcher dynamic state data inbound port URI.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	public RequestDispatcher(
 			final String requestDispatcherURI,
 			final String requestDispatcherManagementInboundPortURI,
@@ -147,8 +161,18 @@ implements RequestDispatcherManagementI,
 		resetAvgCriteria();
 	}
 
+	/**
+	 * Construct a <code>RequestDispatcher</code>.
+	 * 
+	 * @param requestDispatcherManagementInboundPortURI the request dispatcher management inbound port URI.
+	 * @param requestSubmissionInboundPortURI the request submission inbound port URI.
+	 * @param requestNotificationInboundPortURI the request notification inbound port URI.
+	 * @param requestNotificationOutboundPortURI the request notification outbound port URI.
+	 * @param requestDispatcherDynamicStateDataInboundPortURI the request dispatcher dynamic state data inbound port URI.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	public RequestDispatcher(
-			final String managementInboundPortURI,
+			final String requestDispatcherManagementInboundPortURI,
 			final String requestSubmissionInboundPortURI ,
 			final String requestNotificationInboundPortURI,
 			final String requestNotificationOutboundPortURI,
@@ -157,13 +181,16 @@ implements RequestDispatcherManagementI,
 	{
 		this(
 				AbstractPort.generatePortURI(),
-				managementInboundPortURI,
+				requestDispatcherManagementInboundPortURI,
 				requestSubmissionInboundPortURI,
 				requestNotificationInboundPortURI,
 				requestNotificationOutboundPortURI,
 				requestDispatcherDynamicStateDataInboundPortURI);
 	}
 	
+	/**
+	 * @see fr.upmc.components.AbstractComponent#shutdown()
+	 */
 	@Override
 	public void shutdown() throws ComponentShutdownException
 	{
@@ -181,6 +208,31 @@ implements RequestDispatcherManagementI,
 		}
 	}
 	
+	/**
+	 * Reset average criteria.
+	 */
+	private void resetAvgCriteria()
+	{
+		this.executionTimeRequestSum = 0;
+		this.nbRequests = 0;
+		this.counterAvgRequest = 0;
+	}
+	
+	/**
+	 * Get the average of the time execution request.
+	 * @return the average of the time execution request.
+	 */
+	private Double getAvg()
+	{
+		//logMessage(this.toString() + " getAvg : " + executionTimeRequestSum + " - " + nbRequests);
+		
+		// We can't compute the average if nbRequests is reset to 0
+		return this.nbRequests <= 0 ? null : this.executionTimeRequestSum / this.nbRequests;
+	}
+	
+	/**
+	 * @see com.teamalasca.requestdispatcher.interfaces.RequestDispatcherManagementI#associateVirtualMachine(java.lang.String)
+	 */
 	@Override
 	public void associateVirtualMachine(final String virtualMachineRequestSubmissionInboundPortURI) throws Exception
 	{
@@ -206,6 +258,9 @@ implements RequestDispatcherManagementI,
 		logMessage("a new virtual machine (submission input port:'"+ virtualMachineRequestSubmissionInboundPortURI + "') has been associated to " + this.toString());
 	}
 
+	/**
+	 * @see com.teamalasca.requestdispatcher.interfaces.RequestDispatcherManagementI#dissociateVirtualMachine(java.lang.String)
+	 */
 	@Override
 	public void dissociateVirtualMachine(final String virtualMachineRequestSubmissionInboundPortURI) throws Exception
 	{
@@ -228,11 +283,26 @@ implements RequestDispatcherManagementI,
 		logMessage("virtual machine (submission input port:'" + virtualMachineRequestSubmissionInboundPortURI + "') has been dissociated to " + this.toString());
 	}
 
+	/**
+	 * @see com.teamalasca.requestdispatcher.interfaces.RequestDispatcherManagementI#hasOnlyOneVirtualMachine()
+	 */
+	@Override
+	public boolean hasOnlyOneVirtualMachine() throws Exception
+	{
+		return this.rsops.size() == 1;
+	}
+	
+	/**
+	 * @see fr.upmc.datacenter.software.interfaces.RequestSubmissionHandlerI#acceptRequestSubmission(fr.upmc.datacenter.software.interfaces.RequestI)
+	 */
 	@Override
 	public void acceptRequestSubmission(final RequestI r) throws Exception
 	{
 	}
 
+	/**
+	 * @see fr.upmc.datacenter.software.interfaces.RequestSubmissionHandlerI#acceptRequestSubmissionAndNotify(fr.upmc.datacenter.software.interfaces.RequestI)
+	 */
 	@Override
 	public void acceptRequestSubmissionAndNotify(RequestI r) throws Exception
 	{
@@ -257,6 +327,9 @@ implements RequestDispatcherManagementI,
 		rsops.addLast(rsop);
 	}
 
+	/**
+	 * @see fr.upmc.datacenter.software.interfaces.RequestNotificationHandlerI#acceptRequestTerminationNotification(fr.upmc.datacenter.software.interfaces.RequestI)
+	 */
 	@Override
 	public void acceptRequestTerminationNotification(RequestI r) throws Exception
 	{
@@ -267,6 +340,12 @@ implements RequestDispatcherManagementI,
 		rnop.notifyRequestTermination(r);
 	}
 
+	/**
+	 * Get a request dispatcher dynamic state.
+	 * 
+	 * @return a request dispatcher dynamic state.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	public RequestDispatcherDynamicStateI getDynamicState() throws Exception
 	{
 		final Double avg = getAvg();
@@ -285,34 +364,13 @@ implements RequestDispatcherManagementI,
 		
 		return rdds;
 	}
-	
-	private void resetAvgCriteria()
-	{
-		this.executionTimeRequestSum = 0;
-		this.nbRequests = 0;
-		this.counterAvgRequest = 0;
-	}
-	
-	private Double getAvg()
-	{
-		//logMessage(this.toString() + " getAvg : " + executionTimeRequestSum + " - " + nbRequests);
-		
-		// We can't compute the average if nbRequests is reset to 0
-		return this.nbRequests <= 0 ? null : this.executionTimeRequestSum / this.nbRequests;
-	}
 
 	/**
-	 * push the dynamic state of the request dipatcher through its notification data
+	 * Push the dynamic state of the request dispatcher through its notification data
 	 * inbound port.
 	 * 
-	 * <p><strong>Contract</strong></p>
-	 * 
-	 * <pre>
-	 * pre	true			// no precondition.
-	 * post	true			// no postcondition.
-	 * </pre>
 	 *
-	 * @throws Exception
+	 * @throws Exception throws an exception if an error occured..
 	 */
 	public void	sendDynamicState() throws Exception
 	{
@@ -326,20 +384,13 @@ implements RequestDispatcherManagementI,
 	}
 
 	/**
-	 * push the dynamic state of the request dipatcher through its notification data
+	 * Push the dynamic state of the request dispatcher through its notification data
 	 * inbound port at a specified time interval in ms and for a specified
 	 * number of times.
 	 * 
-	 * <p><strong>Contract</strong></p>
-	 * 
-	 * <pre>
-	 * pre	true			// no precondition.
-	 * post	true			// no postcondition.
-	 * </pre>
-	 *
-	 * @param interval
-	 * @param numberOfRemainingPushes
-	 * @throws Exception
+	 * @param interval the interval in ms.
+	 * @param numberOfRemainingPushes the number of remaining pushes.
+	 * @throws Exception throws an exception if an error occured..
 	 */
 	public void	sendDynamicState(final int interval, int numberOfRemainingPushes) throws Exception
 	{
@@ -365,6 +416,9 @@ implements RequestDispatcherManagementI,
 		}
 	}
 	
+	/**
+	 * @see fr.upmc.datacenter.interfaces.PushModeControllingI#startUnlimitedPushing(int)
+	 */
 	@Override
 	public void startUnlimitedPushing(int interval) throws Exception
 	{
@@ -384,6 +438,9 @@ implements RequestDispatcherManagementI,
 					}, interval, interval, TimeUnit.MILLISECONDS);
 	}
 
+	/**
+	 * @see fr.upmc.datacenter.interfaces.PushModeControllingI#startLimitedPushing(int, int)
+	 */
 	@Override
 	public void startLimitedPushing(final int interval, final int n) throws Exception
 	{
@@ -408,6 +465,9 @@ implements RequestDispatcherManagementI,
 					}, interval, TimeUnit.MILLISECONDS);
 	}
 
+	/**
+	 * @see fr.upmc.datacenter.interfaces.PushModeControllingI#stopPushing()
+	 */
 	@Override
 	public void stopPushing() throws Exception
 	{
@@ -416,13 +476,10 @@ implements RequestDispatcherManagementI,
 			this.pushingFuture.cancel(false) ;
 		}		
 	}
-
-	@Override
-	public boolean hasOnlyOneVirtualMachine() throws Exception
-	{
-		return this.rsops.size() == 1;
-	}
 	
+	/** 
+	 * @see java.lang.Object#toString()
+	 */
 	@Override
 	public String toString()
 	{

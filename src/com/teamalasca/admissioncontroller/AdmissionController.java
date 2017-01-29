@@ -21,10 +21,13 @@ import fr.upmc.datacenter.hardware.computers.interfaces.ComputerStaticStateI;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerDynamicStateDataOutboundPort;
 import fr.upmc.datacenter.interfaces.ControlledDataRequiredI;
 
-
 /**
- * An admission controller is a component receiving admission requests from applications
- * and manage it allocating available cores to execute these applications.
+ * The class <code>AdmissionRequest</code> is a component receiving admission requests
+ * from applications and check if they can be accept by the data center.
+ * 
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
+ * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
  */
 public class AdmissionController
 extends AbstractComponent
@@ -32,30 +35,41 @@ implements AdmissionRequestHandlerI,
 		   ComputerStateDataConsumerI
 {
 
+	/** Cores number threshold to check if the data center has enough resources. */
 	private static final int CORES_NUMBER_THRESHOLD = 4;
 
-	/** Internal URI for debug purpose */
+	/** Internal URI for debug purpose. */
 	private final String URI;
 
+	/** Computer URI. */
 	private String computerURI;
 
+	/** Management core inbout port URI. */
 	private String manageCoreInboundPortURI;
 
+	/** Computer dynamic state data inbound port URI to get dynamic data from the computer. */
 	private String computerDynamicStateDataInboundPortURI;
 
-
-	/** Outbound port of the admission controller sending admissions notifications */
+	/** Outbound port of the admission controller sending admissions notifications. */
 	private final AdmissionNotificationOutboundPort anop;
 
-	/** Inbound port of the admission controller receiving admission requests from applications */
+	/** Inbound port of the admission controller receiving admission requests from applications. */
 	private final AdmissionRequestInboundPort asibp;
 
-	/** Outbound port connected to the computer component to receive its data */
+	/** Outbound port connected to the computer component to receive its data. */
 	private ComputerDynamicStateDataOutboundPort cdsdop;
 
+	/** Resources of the computer. */
+	private boolean[][] resources;
 
-	private boolean[][] ressources;
-
+	/**
+	 * Construct an <code>AdmissionController</code>.
+	 * 
+	 * @param admissionControllerURI the admission controller URI.
+	 * @param admissionRequestInboundPortURI the admission request inbound port URI.
+	 * @param admissionNotifiationOutboundPortURI the admission notification oubtound port URI.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	public AdmissionController(
 			final String admissionControllerURI,
 			final String admissionRequestInboundPortURI,
@@ -85,9 +99,16 @@ implements AdmissionRequestHandlerI,
 		this.addPort(anop);
 		this.anop.publishPort();
 
-		ressources = new boolean[0][0];
+		resources = new boolean[0][0];
 	}
 
+	/**
+	 * Construct an <code>AdmissionController</code>.
+	 * 
+	 * @param admissionRequestInboundPortURI the admission request inbound port URI.
+	 * @param admissionNotifiationOutboundPortURI the admission notification oubtound port URI.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	public AdmissionController(
 			final String admissionRequestInboundPortURI,
 			final String admissionNotifiationOutboundPortURI)
@@ -100,13 +121,21 @@ implements AdmissionRequestHandlerI,
 	}
 
 
-	/** Connecting the admission controller with a computer component */
+	/**
+	 * Connect the admission controller with a computer component.
+	 * 
+	 * @param computerURI the computer URI to connect.
+	 * @param manageCoreInboundPortURI the management core inbound port URI.
+	 * @param computerDynamicStateDataInboundPortURI the computer dynamic state data inbound port URI.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	public void doConnectionWithComputer(
 			final String computerURI,
 			final String manageCoreInboundPortURI,
 			final String computerDynamicStateDataInboundPortURI)
 					throws Exception
 	{
+		// keep the related URIs of the computer
 		this.computerURI = computerURI;
 		this.manageCoreInboundPortURI = manageCoreInboundPortURI;
 		this.computerDynamicStateDataInboundPortURI = computerDynamicStateDataInboundPortURI;
@@ -120,24 +149,41 @@ implements AdmissionRequestHandlerI,
 				computerDynamicStateDataInboundPortURI,
 				ControlledDataConnector.class.getCanonicalName());
 		
-		// Push data
+		// push data
 		this.cdsdop.startUnlimitedPushing(200);
 	}
 
+	/** 
+	 * @see fr.upmc.datacenter.hardware.computers.interfaces.ComputerStateDataConsumerI#acceptComputerStaticData(java.lang.String, fr.upmc.datacenter.hardware.computers.interfaces.ComputerStaticStateI)
+	 */
+	@Override
+	public void acceptComputerStaticData(String computerURI, ComputerStaticStateI staticState)
+			throws Exception
+	{
+	}
+	
+	/** 
+	 * @see fr.upmc.datacenter.hardware.computers.interfaces.ComputerStateDataConsumerI#acceptComputerDynamicData(java.lang.String, fr.upmc.datacenter.hardware.computers.interfaces.ComputerDynamicStateI)
+	 */
 	@Override
 	public void acceptComputerDynamicData(String computerURI, ComputerDynamicStateI currentDynamicState)
 			throws Exception 
 	{
-		synchronized (ressources) {
-			ressources = currentDynamicState.getCurrentCoreReservations();
+		// keep resources of the computer
+		synchronized (resources) {
+			resources = currentDynamicState.getCurrentCoreReservations();
 		}
 	}
 
+	/** 
+	 * @see com.teamalasca.admissioncontroller.interfaces.AdmissionRequestHandlerI#handleAdmissionRequest(com.teamalasca.admissioncontroller.interfaces.AdmissionRequestI)
+	 */
 	@Override
 	public void handleAdmissionRequest(AdmissionRequestI request) throws Exception
 	{
 		logMessage(this.toString() + " receive an admission request from app(uri:" + request.getApplicationURI() + ")");
 
+		// accept the admission request if the computer has enough resources
 		if (hasEnoughResources(CORES_NUMBER_THRESHOLD)) {
 			acceptAdmissionRequest(request);
 		}
@@ -146,6 +192,9 @@ implements AdmissionRequestHandlerI,
 		}
 	}
 
+	/* 
+	 * @see com.teamalasca.admissioncontroller.interfaces.AdmissionRequestHandlerI#handleAdmissionRequestAndNotify(com.teamalasca.admissioncontroller.interfaces.AdmissionRequestI)
+	 */
 	@Override
 	public void handleAdmissionRequestAndNotify(AdmissionRequestI request) throws Exception
 	{
@@ -158,17 +207,19 @@ implements AdmissionRequestHandlerI,
 	}
 
 	/**
-	 * @return true if the computer has enough resources to allocate a new virtual machine
+	 * Check it the computer has resources  to allocate a new virtual machine.
+	 * 
+	 * @return true if the computer has enough resources to allocate a new virtual machine.
 	 */
 	private boolean hasEnoughResources(int requestedCoreNumber)
 	{
-		synchronized(ressources) {
+		synchronized(resources) {
 			int count = 0;
-			for (int i = 0; i < ressources.length; ++i)
+			for (int i = 0; i < resources.length; ++i)
 			{
-				for (int j = 0; j < ressources[i].length; ++j)
+				for (int j = 0; j < resources[i].length; ++j)
 				{
-					if (!ressources[i][j]) {
+					if (!resources[i][j]) {
 						++count;
 					}
 				}
@@ -178,14 +229,27 @@ implements AdmissionRequestHandlerI,
 		}
 	}
 
+	/**
+	 * Accept an admission request.
+	 * 
+	 * @param request the admission request.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	private void acceptAdmissionRequest(AdmissionRequestI request) throws Exception
 	{
+		// create components : request dispatcher and autonomic controller
 		createComponents(request);
 		request.acceptRequest();
 
 		logMessage(this.toString() + " accept the admission of app(uri:" + request.getApplicationURI() + ")");
 	}
 
+	/**
+	 * Refuse an admission request.
+	 * 
+	 * @param request the admission request.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	private void refuseAdmissionRequest(AdmissionRequestI request) throws Exception
 	{
 		request.refuseRequest();
@@ -193,6 +257,12 @@ implements AdmissionRequestHandlerI,
 		logMessage(this.toString() + " refuse the admission of app(uri:" + request.getApplicationURI() + ")");
 	}
 
+	/**
+	 * Create the request dispatcher and the autonomic controller for the submitted application.
+	 * 
+	 * @param request the admission request.
+	 * @throws Exception throws an exception if an error occured..
+	 */
 	private void createComponents(AdmissionRequestI request) throws Exception
 	{
 		// ------------- Create the request dispatcher ------------------/
@@ -250,14 +320,10 @@ implements AdmissionRequestHandlerI,
 		// Do adaptation
 		acsop.doPeriodicAdaptation();
 	}
-
-	@Override
-	public void acceptComputerStaticData(String computerURI, ComputerStaticStateI staticState)
-			throws Exception
-	{
-		logMessage("recevied static data");
-	}
 	
+	/** 
+	 * @see java.lang.Object#toString()
+	 */
 	@Override
 	public String toString()
 	{
