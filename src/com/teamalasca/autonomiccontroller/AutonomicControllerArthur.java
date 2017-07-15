@@ -26,11 +26,6 @@ implements RequestDispatcherStateDataConsumerI
 	private List<Double> avgList;
 	private final static int LIMIT_SIZE_AVG_LIST = 3;
 
-	private static final double THRESHOLD = 3000.0;
-	private static final double THRESHOLD_FREQUENCY = 0.20;
-	private static final double THRESHOLD_CORE = 0.40;
-	private static final double THRESHOLD_VM = 0.80;
-
 	private static final int interval = 30000;
 
 	protected ScheduledFuture<?> pushingFuture;
