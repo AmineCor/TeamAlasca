@@ -3,50 +3,146 @@ package com.teamalasca.computer;
 import java.util.Map;
 import java.util.Set;
 
-import com.teamalasca.computer.interfaces.CoreManager;
-import com.teamalasca.computer.ports.ManageCoreInboundPort;
+import com.teamalasca.computer.interfaces.CoreManagementI;
+import com.teamalasca.computer.ports.CoreManagementInboundPort;
 
 import fr.upmc.datacenter.hardware.processors.Processor;
 import fr.upmc.datacenter.hardware.processors.connectors.ProcessorManagementConnector;
+import fr.upmc.datacenter.hardware.processors.interfaces.ProcessorDynamicStateI;
 import fr.upmc.datacenter.hardware.processors.interfaces.ProcessorManagementI;
+import fr.upmc.datacenter.hardware.processors.interfaces.ProcessorStaticStateI;
 import fr.upmc.datacenter.hardware.processors.ports.ProcessorManagementOutboundPort;
 
-public class Computer extends fr.upmc.datacenter.hardware.computers.Computer implements CoreManager{
-
-	private ManageCoreInboundPort mcip;
-	private ProcessorManagementOutboundPort pmop;
+/**
+ * The class <code>Computer</code> implements a component that represents a
+ * computer in a data center.
+ * 
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
+ * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
+ */
+public class Computer
+extends fr.upmc.datacenter.hardware.computers.Computer
+implements CoreManagementI
+{
+	/** Core management inbound port. */
+	final private CoreManagementInboundPort cmip;
 	
-	public Computer(String computerURI, Set<Integer> possibleFrequencies,
-			Map<Integer, Integer> processingPower, int defaultFrequency,
-			int maxFrequencyGap, int numberOfProcessors, int numberOfCores,
-			String computerServicesInboundPortURI,
-			String computerStaticStateDataInboundPortURI,
-			String computerDynamicStateDataInboundPortURI,String manageCoreInboundPortURI) throws Exception {
-		super(computerURI, possibleFrequencies, processingPower, defaultFrequency,
-				maxFrequencyGap, numberOfProcessors, numberOfCores,
-				computerServicesInboundPortURI, computerStaticStateDataInboundPortURI,
+	/** Processor management outbound port. */
+	final private ProcessorManagementOutboundPort pmop;
+	
+	/** Current frequencies for each core. */
+	private int[] currentCoreFrequencies;
+	
+	/**
+	 * Construct a <code>Computer</code>.
+	 * 
+	 * @param computerURI the computer URI.
+	 * @param possibleFrequencies the possible frequencies for cores.
+	 * @param processingPower the Mips for the different possible frequencies.
+	 * @param defaultFrequency the default frequency at which the cores run.
+	 * @param maxFrequencyGap the max frequency gap among cores of the same processor.
+	 * @param numberOfProcessors the number of processors in the computer.
+	 * @param numberOfCores the number of cores per processor (homogeneous).
+	 * @param computerServicesInboundPortURI the URI of the computer service inbound port.
+	 * @param computerStaticStateDataInboundPortURI the URI of the computer static data notification inbound port.
+	 * @param computerDynamicStateDataInboundPortURI the URI of the computer dynamic data notification inbound port.
+	 * @param coreManagerInboundPortURI the core management inbound port URI.
+	 * @throws Exception throws an exception if an error occured..
+	 */
+	public Computer(
+			final String computerURI,
+			final Set<Integer> possibleFrequencies,
+			final Map<Integer, Integer> processingPower,
+			final int defaultFrequency,
+			final int maxFrequencyGap,
+			final int numberOfProcessors,
+			final int numberOfCores,
+			final String computerServicesInboundPortURI,
+			final String computerStaticStateDataInboundPortURI,
+			final String computerDynamicStateDataInboundPortURI,
+			final String coreManagerInboundPortURI)
+					throws Exception {
+		super(
+				computerURI,
+				possibleFrequencies,
+				processingPower,
+				defaultFrequency,
+				maxFrequencyGap,
+				numberOfProcessors,
+				numberOfCores,
+				computerServicesInboundPortURI,
+				computerStaticStateDataInboundPortURI,
 				computerDynamicStateDataInboundPortURI);
 		
-		
-		this.mcip = new ManageCoreInboundPort(manageCoreInboundPortURI,this);
-		this.addPort(mcip);
-		this.mcip.publishPort();
-		this.addOfferedInterface(CoreManager.class);
+		// connect ports
+		this.cmip = new CoreManagementInboundPort(coreManagerInboundPortURI,this);
+		this.addPort(cmip);
+		this.cmip.publishPort();
+		this.addOfferedInterface(CoreManagementI.class);
 		
 		this.pmop = new ProcessorManagementOutboundPort(this);
 		this.addPort(this.pmop);
 		this.pmop.publishPort();
 		this.addRequiredInterface(ProcessorManagementI.class);
 		
+		// get data from processors
+		for (final Processor p : processors) {
+			p.startUnlimitedPushing(500);
+		}
+	}
+	
+	/** 
+	 * @see fr.upmc.datacenter.hardware.processors.interfaces.ProcessorStateDataConsumerI#acceptProcessorStaticData(java.lang.String, fr.upmc.datacenter.hardware.processors.interfaces.ProcessorStaticStateI)
+	 */
+	@Override
+	public void acceptProcessorStaticData(String processorURI, ProcessorStaticStateI ss) throws Exception
+	{
+	}
+	
+	/** 
+	 * @see fr.upmc.datacenter.hardware.processors.interfaces.ProcessorStateDataConsumerI#acceptProcessorDynamicData(java.lang.String, fr.upmc.datacenter.hardware.processors.interfaces.ProcessorDynamicStateI)
+	 */
+	@Override
+	public void acceptProcessorDynamicData(String processorURI, ProcessorDynamicStateI cds) throws Exception
+	{
+		currentCoreFrequencies = cds.getCurrentCoreFrequencies();
 	}
 
+	/**
+	 * @see com.teamalasca.computer.interfaces.CoreManagementI#changeFrequency(fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore, int)
+	 */
 	@Override
-	public void changeFrequency(AllocatedCore core, int frequency) throws Exception {
-		String portUri = core.processorInboundPortURI.get(Processor.ProcessorPortTypes.MANAGEMENT);
-		pmop.doConnection(portUri, ProcessorManagementConnector.class.getCanonicalName());
+	public void changeFrequency(final AllocatedCore core, final int frequency) throws Exception
+	{
+		// connect
+		pmop.doConnection(
+				core.processorInboundPortURI.get(Processor.ProcessorPortTypes.MANAGEMENT),
+				ProcessorManagementConnector.class.getCanonicalName());
+		
+		// update frequency
 		pmop.setCoreFrequency(core.coreNo, frequency);
+		
+		// disconnect
 		pmop.doDisconnection();
 	}
 	
+	/**
+	 * @see com.teamalasca.computer.interfaces.CoreManagementI#getCurrentFrequency(fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore)
+	 */
+	@Override
+	public int getCurrentFrequency(AllocatedCore core) throws Exception
+	{
+		return currentCoreFrequencies[core.coreNo];
+	}
+	
+	/** 
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString()
+	{
+		return "computer '" + this.computerURI + "'";
+	}
 
 }
