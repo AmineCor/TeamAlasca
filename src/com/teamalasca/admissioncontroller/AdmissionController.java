@@ -25,7 +25,7 @@ import fr.upmc.datacenter.interfaces.ControlledDataRequiredI;
  * The class <code>AdmissionRequest</code> is a component receiving admission requests
  * from applications and check if they can be accept by the data center.
  * 
- * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clï¿½ment George</a>
  * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
  * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
  */
@@ -34,9 +34,6 @@ extends AbstractComponent
 implements AdmissionRequestHandlerI,
 		   ComputerStateDataConsumerI
 {
-
-	/** Cores number threshold to check if the data center has enough resources. */
-	private static final int CORES_NUMBER_THRESHOLD = 4;
 
 	/** Internal URI for debug purpose. */
 	private final String URI;
@@ -184,7 +181,7 @@ implements AdmissionRequestHandlerI,
 		logMessage(this.toString() + " receive an admission request from app(uri:" + request.getApplicationURI() + ")");
 
 		// accept the admission request if the computer has enough resources
-		if (hasEnoughResources(CORES_NUMBER_THRESHOLD)) {
+		if (hasEnoughResources(AutonomicController.DEFAULT_CORE_NUMBER)) {
 			acceptAdmissionRequest(request);
 		}
 		else {

@@ -7,7 +7,7 @@ import com.teamalasca.requestdispatcher.interfaces.RequestDispatcherDynamicState
  * a snapshot of the dynamic state of a request dispatcher component to be pulled or
  * pushed through the dynamic state data interface.
  * 
- * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clï¿½ment George</a>
  * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
  * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
  */
@@ -25,21 +25,21 @@ implements RequestDispatcherDynamicStateI
 	protected final String requestDispatcherURI;
 	
 	/** Average */
-	protected final double average;
+	protected final Double average;
 	
 	/**
 	 * Construct a <code>RequestDispatcherDynamicState</code>.
 	 * 
 	 * @param requestDispatcherURI the request dispatcher URI.
-	 * @param average the average.
+	 * @param executionAverage the average.
 	 * @throws Exception throws an exception if an error occured..
 	 */
-	public RequestDispatcherDynamicState(String requestDispatcherURI, double average) throws Exception
+	public RequestDispatcherDynamicState(String requestDispatcherURI, Double executionAverage) throws Exception
 	{
 		super();
 
 		this.requestDispatcherURI = requestDispatcherURI;
-		this.average = average;
+		this.average = executionAverage;
 	}
 	
 	/**

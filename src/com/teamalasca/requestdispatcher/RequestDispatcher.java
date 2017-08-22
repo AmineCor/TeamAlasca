@@ -1,6 +1,7 @@
 package com.teamalasca.requestdispatcher;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -36,16 +37,16 @@ import fr.upmc.datacenter.software.ports.RequestSubmissionOutboundPort;
  * a given application, and dispatching these requests to the different virtual machines
  * allocated for this application.
  * 
- * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clï¿½ment George</a>
  * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
  * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
  */
 public class RequestDispatcher
 extends AbstractComponent 
 implements RequestDispatcherManagementI,
-		   RequestSubmissionHandlerI,
-		   RequestNotificationHandlerI,
-		   PushModeControllerI
+RequestSubmissionHandlerI,
+RequestNotificationHandlerI,
+PushModeControllerI
 {
 
 	/** A private URI to identify this request dispatcher, for debug purpose. */
@@ -56,11 +57,14 @@ implements RequestDispatcherManagementI,
 
 	/** Outbound ports of the request dispatcher connected with the virtual machines allocated for execute the application.
 	 * A linked list is used in order to deal with our dispatching policy. */
-	private final LinkedList<RequestSubmissionOutboundPort> rsops;
+	private final List<RequestSubmissionOutboundPort> rsops;
+
+	/** Index of the next VM to be used **/
+	private int vmCursor = 0;
 
 	/** Inbound port offering the management interface.	*/
 	protected RequestDispatcherManagementInboundPort rdmip ;
-	
+
 	/** Inbound port of the request dispatcher receiving notifications from the virtual machines. */
 	private final RequestNotificationInboundPort rnip;
 
@@ -69,28 +73,28 @@ implements RequestDispatcherManagementI,
 
 	/** Outbound port  of the request dispatcher sending notifications to the application. */
 	protected final RequestNotificationOutboundPort rnop;
-	
+
 	/** Request dispatcher data inbound port through which it pushes its dynamic data. */
 	private RequestDispatcherDynamicStateDataInboundPort rddsdip;
-	
-	/** Map to keep execution time for each request. */
-	private Map<String, Long> executionTimeRequest;
-	
-	/** Sum of all exection time of each request. */
-	private double executionTimeRequestSum;
-	
-	/** Number of requests. */
-	private int nbRequests;
 
-	/** Counter of total called "getAvg". */
-	private int counterAvgRequest;
-	
-	/** We definie a limit to avoid constant average value. */
-	private static final int LIMIT_RESET_COUNTER_AVG = 10;
-	
+	/** Map for storing starts of request executions */
+	private Map<String,Long> requestExecutionStartingTimes;
+
+	/** Number of execution times we store for calculating the execution time average */
+	private final static int EXECUTION_TIME_HISTORY_SIZE = 20;
+
+	/** Number of instructions defining the unit of the calculated execution average (ms/X) */
+	public final static int EXECUTION_TIME_UNIT = 1_000_000_000;
+
+	/** Array storing the last request execution times average */
+	private final Double[] executionTimeAveragesHistory;
+
+	/** Cursor for handling purge of last request execution times */
+	private int executionTimeAveragesHistoryCursor;
+
 	/** Future of the task scheduled to push dynamic data. */
 	private ScheduledFuture<?> pushingFuture;
-	
+
 	/**
 	 * Construct a <code>RequestDispatcher</code>.
 	 * 
@@ -112,7 +116,7 @@ implements RequestDispatcherManagementI,
 					throws Exception
 	{
 		super(1,1);
-		
+
 		// Pre-conditions
 		assert requestDispatcherURI != null;
 		assert requestDispatcherManagementInboundPortURI != null ;
@@ -127,7 +131,7 @@ implements RequestDispatcherManagementI,
 		this.virtualMachinesRequestSubmissionsInboundPortURIs = new ArrayList<>();
 
 		// and no outbound port is initialized
-		this.rsops = new LinkedList<>();
+		this.rsops = Collections.synchronizedList(new ArrayList<RequestSubmissionOutboundPort>());
 		this.addRequiredInterface(RequestSubmissionI.class);
 
 		// whenever the other ports are initialized
@@ -135,7 +139,7 @@ implements RequestDispatcherManagementI,
 		this.rdmip = new RequestDispatcherManagementInboundPort(requestDispatcherManagementInboundPortURI, this);
 		this.addPort(this.rdmip);
 		this.rdmip.publishPort();
-		
+
 		this.rsip = new RequestSubmissionInboundPort(requestSubmissionInboundPortURI, this);
 		this.addPort(rsip);
 		this.rsip.publishPort();
@@ -150,15 +154,16 @@ implements RequestDispatcherManagementI,
 		this.addPort(this.rnip);
 		this.rnip.publishPort();
 		this.addOfferedInterface(RequestNotificationI.class);
-		
+
 		this.rddsdip = new RequestDispatcherDynamicStateDataInboundPort(requestDispatcherDynamicStateDataInboundPortURI,this);
 		this.addPort(this.rddsdip);
 		this.rddsdip.publishPort();
 		this.addOfferedInterface(ControlledDataOfferedI.ControlledPullI.class);
 
 		// Initialize elements to compute average
-		this.executionTimeRequest = new HashMap<>();
-		resetAvgCriteria();
+		requestExecutionStartingTimes = Collections.synchronizedMap(new HashMap<String,Long>());
+		this.executionTimeAveragesHistory = new Double[EXECUTION_TIME_HISTORY_SIZE];
+		executionTimeAveragesHistoryCursor = 0;
 	}
 
 	/**
@@ -187,7 +192,7 @@ implements RequestDispatcherManagementI,
 				requestNotificationOutboundPortURI,
 				requestDispatcherDynamicStateDataInboundPortURI);
 	}
-	
+
 	/**
 	 * @see fr.upmc.components.AbstractComponent#shutdown()
 	 */
@@ -207,29 +212,25 @@ implements RequestDispatcherManagementI,
 			throw new ComponentShutdownException(e);
 		}
 	}
-	
-	/**
-	 * Reset average criteria.
-	 */
-	private void resetAvgCriteria()
-	{
-		this.executionTimeRequestSum = 0;
-		this.nbRequests = 0;
-		this.counterAvgRequest = 0;
-	}
-	
+
 	/**
 	 * Get the average of the time execution request.
-	 * @return the average of the time execution request.
+	 * @return the average of the time execution request in milli seconds
 	 */
-	private Double getAvg()
-	{
-		//logMessage(this.toString() + " getAvg : " + executionTimeRequestSum + " - " + nbRequests);
-		
-		// We can't compute the average if nbRequests is reset to 0
-		return this.nbRequests <= 0 ? null : this.executionTimeRequestSum / this.nbRequests;
+	private Double getRequestExecutionAverage()
+	{	
+		int i = 0;
+		Double sum = 0D;
+		for(;i<this.executionTimeAveragesHistory.length;i++){
+			if(this.executionTimeAveragesHistory[i] == null)
+				break;
+			sum += this.executionTimeAveragesHistory[i];
+		}
+		if(sum == 0D)
+			return null;
+		return sum / i;
 	}
-	
+
 	/**
 	 * @see com.teamalasca.requestdispatcher.interfaces.RequestDispatcherManagementI#associateVirtualMachine(java.lang.String)
 	 */
@@ -251,9 +252,9 @@ implements RequestDispatcherManagementI,
 
 		// creating the connection from the new port to the VM
 		rsop.doConnection(virtualMachineRequestSubmissionInboundPortURI, RequestSubmissionConnector.class.getCanonicalName());
-		
+
 		// adding the port to our internal outbound port list
-		this.rsops.addFirst(rsop);
+		this.rsops.add(vmCursor, rsop);
 
 		logMessage("a new virtual machine (submission input port:'"+ virtualMachineRequestSubmissionInboundPortURI + "') has been associated to " + this.toString());
 	}
@@ -291,7 +292,7 @@ implements RequestDispatcherManagementI,
 	{
 		return this.rsops.size() == 1;
 	}
-	
+
 	/**
 	 * @see fr.upmc.datacenter.software.interfaces.RequestSubmissionHandlerI#acceptRequestSubmission(fr.upmc.datacenter.software.interfaces.RequestI)
 	 */
@@ -310,21 +311,20 @@ implements RequestDispatcherManagementI,
 			throw new Exception("request '" + r.getRequestURI() + "' cant be handled because no vm is connected to the " + this.toString());
 		}
 
-		RequestSubmissionOutboundPort rsop = rsops.removeFirst(); 
+		synchronized (rsops){
 
-		if (!rsop.connected()) {
-			throw new Exception("port '" + rsop.getPortURI()+"' of " + this.toString() + " is disconnected, that should not happen");
+			RequestSubmissionOutboundPort rsop = rsops.get(vmCursor);
+			vmCursor = (vmCursor + 1) % rsops.size();
+
+			if (!rsop.connected()) {
+				throw new Exception("port '" + rsop.getPortURI()+"' of " + this.toString() + " is disconnected, that should not happen");
+			}
+
+			requestExecutionStartingTimes.put(r.getRequestURI(), System.currentTimeMillis());
+			// Send request to VM
+			rsop.submitRequestAndNotify(r);
+			logMessage("request '" + r.getRequestURI() + "' submitted to " + this.toString());
 		}
-		
-		// Keep start time
-		executionTimeRequest.put(r.getRequestURI(), System.currentTimeMillis());
-		
-		// Send request to VM
-		rsop.submitRequestAndNotify(r);
-		logMessage("request '" + r.getRequestURI() + "' submitted to " + this.toString());
-
-		// the port is pushed at the last position of the list, performing a good ports turnover
-		rsops.addLast(rsop);
 	}
 
 	/**
@@ -333,10 +333,18 @@ implements RequestDispatcherManagementI,
 	@Override
 	public void acceptRequestTerminationNotification(RequestI r) throws Exception
 	{
-		// Add execution time to the sum
-		executionTimeRequestSum = (double) (System.currentTimeMillis() - executionTimeRequest.remove(r.getRequestURI()));
-		++nbRequests;
-	
+
+		// Add execution time to the history
+		long requestExecutionTime = System.currentTimeMillis() - requestExecutionStartingTimes.remove(r.getRequestURI());
+		double weight = ((double)r.getPredictedNumberOfInstructions()) / EXECUTION_TIME_UNIT;
+		if(weight == 0D){ // avoid division by 0
+			this.executionTimeAveragesHistory[executionTimeAveragesHistoryCursor] = 0D;
+		}
+		else{
+			this.executionTimeAveragesHistory[executionTimeAveragesHistoryCursor] = ((double)requestExecutionTime) / weight;
+		}
+		System.out.println(this.executionTimeAveragesHistory[executionTimeAveragesHistoryCursor]);
+		executionTimeAveragesHistoryCursor = (executionTimeAveragesHistoryCursor + 1) % executionTimeAveragesHistory.length;
 		rnop.notifyRequestTermination(r);
 	}
 
@@ -348,20 +356,13 @@ implements RequestDispatcherManagementI,
 	 */
 	public RequestDispatcherDynamicStateI getDynamicState() throws Exception
 	{
-		final Double avg = getAvg();
-		// Average is null in the case where this.nbRequests = 0
-		if (avg == null) {
+		final Double executionAverage = getRequestExecutionAverage();
+		// Average is null at startup
+		if (executionAverage == null) {
 			return null;
 		}
-		
-		++counterAvgRequest;
-		RequestDispatcherDynamicState rdds = new RequestDispatcherDynamicState(this.URI, getAvg());
-		
-		// Reset avg criteria each LIMIT_RESET_COUNTER_AVG times
-		if (counterAvgRequest % LIMIT_RESET_COUNTER_AVG == 0) {
-			resetAvgCriteria();
-		}
-		
+
+		RequestDispatcherDynamicState rdds = new RequestDispatcherDynamicState(this.URI, executionAverage);
 		return rdds;
 	}
 
@@ -376,7 +377,7 @@ implements RequestDispatcherManagementI,
 	{
 		if (this.rddsdip.connected()) {
 			RequestDispatcherDynamicStateI rdds = this.getDynamicState();
-			
+
 			if (rdds != null) {
 				this.rddsdip.send(rdds) ;
 			}
@@ -395,7 +396,7 @@ implements RequestDispatcherManagementI,
 	public void	sendDynamicState(final int interval, int numberOfRemainingPushes) throws Exception
 	{
 		this.sendDynamicState();
-		
+
 		final int fNumberOfRemainingPushes = numberOfRemainingPushes - 1;
 		if (fNumberOfRemainingPushes > 0) {
 			final RequestDispatcher rd = this;
@@ -415,7 +416,7 @@ implements RequestDispatcherManagementI,
 							}, interval, TimeUnit.MILLISECONDS);
 		}
 	}
-	
+
 	/**
 	 * @see fr.upmc.datacenter.interfaces.PushModeControllingI#startUnlimitedPushing(int)
 	 */
@@ -424,18 +425,18 @@ implements RequestDispatcherManagementI,
 	{
 		final RequestDispatcher rd = this;
 		this.pushingFuture =
-			this.scheduleTaskAtFixedRate(
-					new ComponentI.ComponentTask() {
-						@Override
-						public void run() {
-							try {
-								rd.sendDynamicState();
+				this.scheduleTaskAtFixedRate(
+						new ComponentI.ComponentTask() {
+							@Override
+							public void run() {
+								try {
+									rd.sendDynamicState();
+								}
+								catch (Exception e) {
+									throw new RuntimeException(e);
+								}
 							}
-							catch (Exception e) {
-								throw new RuntimeException(e);
-							}
-						}
-					}, interval, interval, TimeUnit.MILLISECONDS);
+						}, interval, interval, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -447,22 +448,22 @@ implements RequestDispatcherManagementI,
 		assert n > 0;
 
 		this.logMessage(this.URI + " startLimitedPushing with interval "
-									+ interval + " ms for " + n + " times.");
+				+ interval + " ms for " + n + " times.");
 
 		final RequestDispatcher rd = this;
 		this.pushingFuture =
-			this.scheduleTask(
-					new ComponentI.ComponentTask() {
-						@Override
-						public void run() {
-							try {
-								rd.sendDynamicState(interval, n);
+				this.scheduleTask(
+						new ComponentI.ComponentTask() {
+							@Override
+							public void run() {
+								try {
+									rd.sendDynamicState(interval, n);
+								}
+								catch (Exception e) {
+									throw new RuntimeException(e);
+								}
 							}
-							catch (Exception e) {
-								throw new RuntimeException(e);
-							}
-						}
-					}, interval, TimeUnit.MILLISECONDS);
+						}, interval, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -472,11 +473,11 @@ implements RequestDispatcherManagementI,
 	public void stopPushing() throws Exception
 	{
 		if (this.pushingFuture != null && !(this.pushingFuture.isCancelled() ||
-			this.pushingFuture.isDone())) {
+				this.pushingFuture.isDone())) {
 			this.pushingFuture.cancel(false) ;
 		}		
 	}
-	
+
 	/** 
 	 * @see java.lang.Object#toString()
 	 */
@@ -485,5 +486,5 @@ implements RequestDispatcherManagementI,
 	{
 		return "request dispatcher '" + URI + "'";
 	}
-	
+
 }

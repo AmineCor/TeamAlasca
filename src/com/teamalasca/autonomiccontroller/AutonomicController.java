@@ -36,7 +36,7 @@ import fr.upmc.datacenter.software.connectors.RequestNotificationConnector;
  * The class <code>AutonomicController</code> is a component to perform
  * adaptations depending of the execution times of the requests.
  * 
- * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clï¿½ment George</a>
  * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
  * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
  */
@@ -45,17 +45,17 @@ extends AbstractComponent
 implements AutonomicControllerServicesI,
 		   RequestDispatcherStateDataConsumerI
 {
-	/** List of averages from the request dispatcher to compute the moving average. */
+	/** List of execution time (in milliseconds) averages from the request dispatcher to compute the moving average. */
 	private List<Double> requestExecutionAverages;
 	
 	/** The "N" value to compute moving average. */
 	private final static int MAX_SIZE_AVERAGE_LIST = 3;
 	
 	/** Default core number to allocate cores. */
-	private final static int DEFAULT_CORE_NUMBER = 4;
+	public final static int DEFAULT_CORE_NUMBER = 8;
 	
-	/** Threshold to do adaptation. */
-	private static final double THRESHOLD = 1500.0;
+	/** The aimed time we want to reach */
+	private static final Double AIMED_AVERAGE  = 500D;
 	
 	/** Threshold frequency to do adaptation. */
 	private static final double THRESHOLD_FREQUENCY = 0.20;
@@ -180,7 +180,7 @@ implements AutonomicControllerServicesI,
 		// create port to receive computer data
 		doConnectionWithComputer(computerURI, computerDynamicStateDataInboundPortURI,manageCoreInboundPortURI);	
 
-		// Allocate cores to application vm
+		// Allocate a first VM to the request dispatcher.
 		allocateVm();
 	}
 
@@ -301,15 +301,16 @@ implements AutonomicControllerServicesI,
 				AVMApplicationVMManagementInboundPortURI,
 				AVMRequestSubmissionInboundPortURI,
 				AVMRequestNotificationOutboundPortURI);
-		vm.toggleTracing();
-		vm.toggleLogging();
+		
+		//vm.toggleTracing();
+		//vm.toggleLogging();
 		
 		// create port to manage the application vm associated with the request dispatcher
-		final ApplicationVMManagementOutboundPort AVMManagementOutboundPort = new ApplicationVMManagementOutboundPort(AbstractPort.generatePortURI(), this);
-		this.avmmop.put(AVMManagementOutboundPort, new ApplicationVMData(AVMRequestSubmissionInboundPortURI));
-		this.addPort(AVMManagementOutboundPort);
-		AVMManagementOutboundPort.publishPort();
-		AVMManagementOutboundPort.doConnection(AVMApplicationVMManagementInboundPortURI, ApplicationVMManagementConnector.class.getCanonicalName());
+		final ApplicationVMManagementOutboundPort appVMManagementOutboundPort = new ApplicationVMManagementOutboundPort(AbstractPort.generatePortURI(), this);
+		this.avmmop.put(appVMManagementOutboundPort, new ApplicationVMData(AVMRequestSubmissionInboundPortURI));
+		this.addPort(appVMManagementOutboundPort);
+		appVMManagementOutboundPort.publishPort();
+		appVMManagementOutboundPort.doConnection(AVMApplicationVMManagementInboundPortURI, ApplicationVMManagementConnector.class.getCanonicalName());
 		
 		// ------- Connect the request dispatcher with the application virtual machine ------/
 		this.rdmop.associateVirtualMachine(AVMRequestSubmissionInboundPortURI);
@@ -317,7 +318,7 @@ implements AutonomicControllerServicesI,
 				this.requestDispatcherRequestNotificationInboundPortURI,
 				RequestNotificationConnector.class.getCanonicalName());
 		
-		this.allocateCores(AVMManagementOutboundPort, DEFAULT_CORE_NUMBER);
+		this.allocateCores(appVMManagementOutboundPort, DEFAULT_CORE_NUMBER);
 	}
 	
 	/**
@@ -350,16 +351,15 @@ implements AutonomicControllerServicesI,
 		// keep cores in memory for later adaptation on cores
 		this.avmmop.get(AVMManagementOutboundPort).addCores(ac);
 	}
-
+	
 	/**
-	 * Allocate one core.
-	 * 
-	 * @param AVMManagementOutboundPort the application virtual machine management outbound port.
-	 * @throws Exception throws an exception if an error occured..
+	 * Allocate a single core
+	 * @param selectRandomVm
+	 * @throws Exception 
 	 */
-	private void allocateCore(final ApplicationVMManagementOutboundPort AVMManagementOutboundPort) throws Exception
-	{
-		this.allocateCores(AVMManagementOutboundPort, 1);
+	private void allocateCore(
+			ApplicationVMManagementOutboundPort anApplicationVMManagementOutboundPort) throws Exception {
+		this.allocateCores(anApplicationVMManagementOutboundPort, 1);	
 	}
 	
 	/**
@@ -405,7 +405,7 @@ implements AutonomicControllerServicesI,
 	 * 
 	 * @return the moving average.
 	 */
-	public Double computeMovingAverage()
+	public Long computeMovingAverage()
 	{
 		synchronized (requestExecutionAverages) {
 			// Need to check if we at least got an average
@@ -414,7 +414,7 @@ implements AutonomicControllerServicesI,
 			}
 
 			// Compute moving average
-			double result = 0;
+			long result = 0L;
 			for (double i : requestExecutionAverages) {
 				result += i;
 			}
@@ -437,24 +437,24 @@ implements AutonomicControllerServicesI,
 					public void run() {
 						try {
 							// Compute moving average
-							final Double movingAvg = computeMovingAverage();
+							final Long movingAvg = computeMovingAverage();
 									
 							// Check this value it's not null, it can happen at the beginning of the execution
 							if (movingAvg != null) {
 								// We are above the THRESHOLD
-								if (movingAvg > THRESHOLD) {
+								if (movingAvg > AIMED_AVERAGE) {
 									// Allocate VM
-									if (movingAvg > THRESHOLD * (1 + THRESHOLD_VM)) {
+									if (movingAvg >  AIMED_AVERAGE * (1 + THRESHOLD_VM)) {
 										logMessage(this.toString() + " : Do adaptation - Allocate VM");
 										allocateVm();		
 									}
 									// Allocate core
-									else if (movingAvg > THRESHOLD * (1 + THRESHOLD_CORE)) {
+									else if (movingAvg > AIMED_AVERAGE * (1 + THRESHOLD_CORE)) {
 										logMessage(this.toString() + " : Do adaptation - Allocate core");
 										allocateCore(selectRandomVm());
 									}
 									// Increase frequency
-									else if (movingAvg > THRESHOLD * (1 + THRESHOLD_FREQUENCY)) {
+									else if (movingAvg > AIMED_AVERAGE * (1 + THRESHOLD_FREQUENCY)) {
 										logMessage(this.toString() + " : Do adaptation - Increase frequency");
 										// Select a random vm
 										final ApplicationVMManagementOutboundPort vm = selectRandomVm();
@@ -472,7 +472,7 @@ implements AutonomicControllerServicesI,
 								}
 								else {
 									// Release VM
-									if (movingAvg <= THRESHOLD * (1 - THRESHOLD_VM)) {
+									if (movingAvg <=  AIMED_AVERAGE * (1 - THRESHOLD_VM)) {
 										if (rdmop.hasOnlyOneVirtualMachine()) {
 											logMessage(this.toString() + " : Do adaptation - Can't release VM because only one VM is available");
 										}
@@ -482,7 +482,7 @@ implements AutonomicControllerServicesI,
 										}
 									}
 									// Release core
-									else if (movingAvg <= THRESHOLD * (1 - THRESHOLD_CORE)) {
+									else if (movingAvg <=  AIMED_AVERAGE * (1 - THRESHOLD_CORE)) {
 										// Select a random vm
 										final ApplicationVMManagementOutboundPort vm = selectRandomVm();
 										final ApplicationVMData vmData = avmmop.get(vm);
@@ -496,7 +496,7 @@ implements AutonomicControllerServicesI,
 										}
 									}
 									// Decrease frequency
-									else if (movingAvg <= THRESHOLD * (1 - THRESHOLD_FREQUENCY)) {
+									else if (movingAvg <= AIMED_AVERAGE * (1 - THRESHOLD_FREQUENCY)) {
 										logMessage(this.toString() + " : Do adaptation - Decrease frequency");
 										// Select a random vm
 										final ApplicationVMManagementOutboundPort vm = selectRandomVm();
@@ -526,6 +526,7 @@ implements AutonomicControllerServicesI,
 							e.printStackTrace();
 						}
 					}
+
 				}, PERIODIC_INTERVAL_ADAPTATION, TimeUnit.MILLISECONDS);
 	}
 

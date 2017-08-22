@@ -24,7 +24,7 @@ import fr.upmc.datacenter.hardware.tests.ComputerMonitor;
  * The class <code>TestAutonomicController</code> is a consistent components assembly
  * allowing testing <code>AutonomicController</code> components.
  * 
- * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clï¿½ment George</a>
  * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
  * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
  */
@@ -100,15 +100,15 @@ extends	AbstractCVM
 	public void	deploy() throws Exception
 	{
 		AbstractComponent.configureLogging("", "", 0, '|');
-		Processor.DEBUG = true;
+		//Processor.DEBUG = true;
 
 		// --------------------------------------------------------------------
 		// Create and deploy a computer component with its 2 processors and
 		// each with 2 cores.
 		// --------------------------------------------------------------------
 		String computerURI = "computer0";
-		int numberOfProcessors = 2;
-		int numberOfCores = 2;
+		int numberOfProcessors = 16;
+		int numberOfCores = 8;
 		Set<Integer> admissibleFrequencies = new HashSet<>();
 		admissibleFrequencies.add(1500);	// Cores can run at 1,5 GHz
 		admissibleFrequencies.add(3000);	// and at 3 GHz
@@ -142,7 +142,7 @@ extends	AbstractCVM
 		// --------------------------------------------------------------------
 
 		// --------------------------------------------------------------------
-		// Create the computer monitor component and connect its to ports
+		// Create the computer monitor component and connect its ports
 		// with the computer component.
 		// --------------------------------------------------------------------
 		ComputerMonitor cm =
@@ -185,6 +185,7 @@ extends	AbstractCVM
 				computerURI,
 				ComputerCoreManagerInboundPortURI,
 				ComputerDynamicStateDataInboundPortURI);
+		
 		admissionController.toggleLogging();
 		admissionController.toggleTracing();
 
@@ -198,8 +199,8 @@ extends	AbstractCVM
 		app2 = new RGApplication("app2");
 		this.addDeployedComponent(app2);
 		app2.doConnectionAdmissionControler(AdmissionControllerAdmissionRequestInboundPortURI);
-		app2.toggleTracing() ;
-		app2.toggleLogging() ;
+		//app2.toggleTracing() ;
+		//app2.toggleLogging() ;
 
 		// --------------------------------------------------------------------
 
@@ -246,9 +247,9 @@ extends	AbstractCVM
 		// start the first application
 		this.app1.startApp();
 		// wait 5 seconds
-		Thread.sleep(5000L) ;
+		Thread.sleep(15000L) ;
 		// start the second application
-		this.app2.startApp();
+		//this.app2.startApp();
 		
 		Thread.sleep(Long.MAX_VALUE);
 	}

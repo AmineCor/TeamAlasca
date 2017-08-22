@@ -18,7 +18,7 @@ import fr.upmc.datacenterclient.requestgenerator.RequestGenerator;
 /**
  * The class <code>RGApplication</code> represents a client application.
  * 
- * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clï¿½ment George</a>
  * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
  * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
  */
@@ -86,6 +86,10 @@ implements AdmissionNotificationHandlerI,
 		logMessage(this.toString() + " starts");
 		AdmissionRequest request = new AdmissionRequest(this.URI, anibp.getPortURI());
 		this.asop.handleAdmissionRequestAndNotify(request);
+	}
+	
+	public void stopApp() throws Exception{
+		rg.stopGeneration();
 	}
 
 	/**
