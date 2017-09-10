@@ -4,6 +4,7 @@ import com.teamalasca.computer.interfaces.CoreManagementI;
 
 import fr.upmc.components.connectors.AbstractConnector;
 import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
+import fr.upmc.datacenter.hardware.processors.UnacceptableFrequencyException;
 
 
 /**
@@ -11,7 +12,7 @@ import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
  * a connector for ports exchanging through the interface 
  * <code>CoreManagementI</code>.
  * 
- * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clï¿½ment George</a>
  * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
  * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
  */
@@ -72,6 +73,20 @@ implements CoreManagementI
 	public int getCurrentFrequency(AllocatedCore core) throws Exception
 	{
 		return ((CoreManagementI) this.offering).getCurrentFrequency(core);
+	}
+
+	@Override
+	public void increaseFrequency(AllocatedCore core)
+			throws UnacceptableFrequencyException, Exception {
+		((CoreManagementI) this.offering).increaseFrequency(core);
+		
+	}
+	
+	@Override
+	public void decreaseFrequency(AllocatedCore core)
+			throws UnacceptableFrequencyException, Exception {
+		((CoreManagementI) this.offering).decreaseFrequency(core);
+		
 	}
 
 }

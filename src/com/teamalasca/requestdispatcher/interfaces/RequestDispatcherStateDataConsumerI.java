@@ -4,7 +4,7 @@ package com.teamalasca.requestdispatcher.interfaces;
  * The interface <code>RequestDispatcherStateDataConsumerI</code> defines the consumer
  * side methods used to receive dynamic state data pushed by a request dispatcher.q
  * 
- * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clï¿½ment George</a>
  * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
  * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
  */

@@ -103,8 +103,8 @@ extends	AbstractCVM
 		//Processor.DEBUG = true;
 
 		// --------------------------------------------------------------------
-		// Create and deploy a computer component with its 2 processors and
-		// each with 2 cores.
+		// Create and deploy a computer component with its 16 processors and
+		// each with 8 cores.
 		// --------------------------------------------------------------------
 		String computerURI = "computer0";
 		int numberOfProcessors = 16;
@@ -120,7 +120,6 @@ extends	AbstractCVM
 				admissibleFrequencies,
 				processingPower,  
 				1500,		// Test scenario 1, frequency = 1,5 GHz
-				// 3000,	// Test scenario 2, frequency = 3 GHz
 				1500,		// max frequency gap within a processor
 				numberOfProcessors,
 				numberOfCores,

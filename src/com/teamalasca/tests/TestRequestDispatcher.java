@@ -12,6 +12,7 @@ import com.teamalasca.requestdispatcher.ports.RequestDispatcherManagementOutboun
 import fr.upmc.components.AbstractComponent;
 import fr.upmc.components.connectors.DataConnector;
 import fr.upmc.components.cvm.AbstractCVM;
+import fr.upmc.components.ports.AbstractPort;
 import fr.upmc.datacenter.connectors.ControlledDataConnector;
 import fr.upmc.datacenter.hardware.computers.Computer;
 import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
@@ -36,7 +37,7 @@ import fr.upmc.datacenterclient.requestgenerator.ports.RequestGeneratorManagemen
  * The class <code>TestRequestDispatcher</code>  is a consistent components assembly allowing
  * testing the <code>RequestDispatcher</code> components.
  * 
- * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clï¿½ment George</a>
  * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
  * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
  */
@@ -286,9 +287,9 @@ extends	AbstractCVM
 		
 		
 		// Associating 3 VMs to the request dispatcher
-		rdmop.associateVirtualMachine(VirtualMachineRequestSubmissionInboundPortURI1);
-		rdmop.associateVirtualMachine(VirtualMachineRequestSubmissionInboundPortURI2);
-		rdmop.associateVirtualMachine(VirtualMachineRequestSubmissionInboundPortURI3);
+		rdmop.associateVirtualMachine(AbstractPort.generatePortURI(),VirtualMachineRequestSubmissionInboundPortURI1);
+		rdmop.associateVirtualMachine(AbstractPort.generatePortURI(),VirtualMachineRequestSubmissionInboundPortURI2);
+		rdmop.associateVirtualMachine(AbstractPort.generatePortURI(),VirtualMachineRequestSubmissionInboundPortURI3);
 
 		// Connecting VMs notifications ports with the one of the request dispatcher
 		RequestNotificationOutboundPort vmrnop1 =

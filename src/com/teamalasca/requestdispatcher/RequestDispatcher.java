@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
@@ -51,16 +50,14 @@ PushModeControllerI
 
 	/** A private URI to identify this request dispatcher, for debug purpose. */
 	private final String URI;
+	
+	private final Map<String, RequestSubmissionOutboundPort> rsops;
 
 	/** URIs of the virtual machines inbound ports allocated to this request dispatcher. */
-	private final List<String> virtualMachinesRequestSubmissionsInboundPortURIs;
-
-	/** Outbound ports of the request dispatcher connected with the virtual machines allocated for execute the application.
-	 * A linked list is used in order to deal with our dispatching policy. */
-	private final List<RequestSubmissionOutboundPort> rsops;
+	private final List<String> virtualMachinesURIs;
 
 	/** Index of the next VM to be used **/
-	private int vmCursor = 0;
+	private Integer vmCursor = 0;
 
 	/** Inbound port offering the management interface.	*/
 	protected RequestDispatcherManagementInboundPort rdmip ;
@@ -86,7 +83,7 @@ PushModeControllerI
 	/** Number of instructions defining the unit of the calculated execution average (ms/X) */
 	public final static int EXECUTION_TIME_UNIT = 1_000_000_000;
 
-	/** Array storing the last request execution times average */
+	/** Array storing the last request execution time (pondered by the number of instruction)*/
 	private final Double[] executionTimeAveragesHistory;
 
 	/** Cursor for handling purge of last request execution times */
@@ -128,10 +125,11 @@ PushModeControllerI
 		this.URI = requestDispatcherURI;
 
 		// for now, no vm is allocated to this request dispatcher
-		this.virtualMachinesRequestSubmissionsInboundPortURIs = new ArrayList<>();
+		this.virtualMachinesURIs = new ArrayList<>();
 
 		// and no outbound port is initialized
-		this.rsops = Collections.synchronizedList(new ArrayList<RequestSubmissionOutboundPort>());
+		this.rsops = new HashMap<>();
+		
 		this.addRequiredInterface(RequestSubmissionI.class);
 
 		// whenever the other ports are initialized
@@ -200,7 +198,7 @@ PushModeControllerI
 	public void shutdown() throws ComponentShutdownException
 	{
 		try {
-			for (RequestSubmissionOutboundPort rsop : rsops) {
+			for (RequestSubmissionOutboundPort rsop : rsops.values()) {
 				rsop.doDisconnection();
 				rsop.unpublishPort();
 			}
@@ -235,14 +233,14 @@ PushModeControllerI
 	 * @see com.teamalasca.requestdispatcher.interfaces.RequestDispatcherManagementI#associateVirtualMachine(java.lang.String)
 	 */
 	@Override
-	public void associateVirtualMachine(final String virtualMachineRequestSubmissionInboundPortURI) throws Exception
+	public void associateVirtualMachine(final String virtualMachineURI,final String virtualMachineRequestSubmissionInboundPortURI) throws Exception
 	{
-		if (this.virtualMachinesRequestSubmissionsInboundPortURIs.contains(virtualMachineRequestSubmissionInboundPortURI)) {
+		// avoid to add twice the same machine
+		if (this.virtualMachinesURIs.contains(virtualMachineURI)) {
 			return;
 		}
 
-		// adding the new virtual machine to our internal vm list
-		this.virtualMachinesRequestSubmissionsInboundPortURIs.add(virtualMachineRequestSubmissionInboundPortURI);
+		this.virtualMachinesURIs.add(virtualMachineURI);
 
 		// creating a new outbound port for the VM
 		final String URI = AbstractPort.generatePortURI();
@@ -254,7 +252,7 @@ PushModeControllerI
 		rsop.doConnection(virtualMachineRequestSubmissionInboundPortURI, RequestSubmissionConnector.class.getCanonicalName());
 
 		// adding the port to our internal outbound port list
-		this.rsops.add(vmCursor, rsop);
+		this.rsops.put(virtualMachineURI, rsop);
 
 		logMessage("a new virtual machine (submission input port:'"+ virtualMachineRequestSubmissionInboundPortURI + "') has been associated to " + this.toString());
 	}
@@ -263,34 +261,20 @@ PushModeControllerI
 	 * @see com.teamalasca.requestdispatcher.interfaces.RequestDispatcherManagementI#dissociateVirtualMachine(java.lang.String)
 	 */
 	@Override
-	public void dissociateVirtualMachine(final String virtualMachineRequestSubmissionInboundPortURI) throws Exception
+	public void dissociateVirtualMachine(String virtualMachineURI) throws Exception
 	{
-		if (!this.virtualMachinesRequestSubmissionsInboundPortURIs.contains(virtualMachineRequestSubmissionInboundPortURI)) {
+		if (!this.virtualMachinesURIs.contains(virtualMachineURI)) {
 			return;
 		}
-
-		synchronized (rsops) {
-			for (Iterator<RequestSubmissionOutboundPort> it = rsops.iterator(); it.hasNext();) {
-				RequestSubmissionOutboundPort rsop = it.next();
-				if (rsop.getServerPortURI().equals(virtualMachineRequestSubmissionInboundPortURI)) {
-					it.remove();
-					rsop.unpublishPort();
-					rsop.doDisconnection();
-				}
-			}
+		
+		RequestSubmissionOutboundPort outboundPort = rsops.get(virtualMachineURI);
+		
+		if(outboundPort != null){
+				outboundPort.unpublishPort();
+				outboundPort.doDisconnection();
 		}
 
-		this.virtualMachinesRequestSubmissionsInboundPortURIs.remove(virtualMachineRequestSubmissionInboundPortURI);
-		logMessage("virtual machine (submission input port:'" + virtualMachineRequestSubmissionInboundPortURI + "') has been dissociated to " + this.toString());
-	}
-
-	/**
-	 * @see com.teamalasca.requestdispatcher.interfaces.RequestDispatcherManagementI#hasOnlyOneVirtualMachine()
-	 */
-	@Override
-	public boolean hasOnlyOneVirtualMachine() throws Exception
-	{
-		return this.rsops.size() == 1;
+		logMessage("virtual machine "+ virtualMachineURI + "') has been dissociated to " + this.toString());
 	}
 
 	/**
@@ -311,20 +295,23 @@ PushModeControllerI
 			throw new Exception("request '" + r.getRequestURI() + "' cant be handled because no vm is connected to the " + this.toString());
 		}
 
-		synchronized (rsops){
+		RequestSubmissionOutboundPort rsop;
 
-			RequestSubmissionOutboundPort rsop = rsops.get(vmCursor);
-			vmCursor = (vmCursor + 1) % rsops.size();
-
-			if (!rsop.connected()) {
-				throw new Exception("port '" + rsop.getPortURI()+"' of " + this.toString() + " is disconnected, that should not happen");
-			}
-
-			requestExecutionStartingTimes.put(r.getRequestURI(), System.currentTimeMillis());
-			// Send request to VM
-			rsop.submitRequestAndNotify(r);
-			logMessage("request '" + r.getRequestURI() + "' submitted to " + this.toString());
+		synchronized (vmCursor){ // select the next virtual machine and increment the cursor
+			String vm = virtualMachinesURIs.get(vmCursor);
+			vmCursor = (vmCursor + 1) % virtualMachinesURIs.size();
+			rsop = rsops.get(vm);
 		}
+
+		if (!rsop.connected()) {
+			throw new Exception("port '" + rsop.getPortURI()+"' of " + this.toString() + " is disconnected, that should not happen");
+		}
+
+		requestExecutionStartingTimes.put(r.getRequestURI(), System.currentTimeMillis());
+		// Send request to VM
+		rsop.submitRequestAndNotify(r);
+		logMessage("request '" + r.getRequestURI() + "' submitted to " + this.toString());
+
 	}
 
 	/**
@@ -333,7 +320,6 @@ PushModeControllerI
 	@Override
 	public void acceptRequestTerminationNotification(RequestI r) throws Exception
 	{
-
 		// Add execution time to the history
 		long requestExecutionTime = System.currentTimeMillis() - requestExecutionStartingTimes.remove(r.getRequestURI());
 		double weight = ((double)r.getPredictedNumberOfInstructions()) / EXECUTION_TIME_UNIT;

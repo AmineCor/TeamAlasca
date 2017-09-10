@@ -5,6 +5,7 @@ import com.teamalasca.computer.interfaces.CoreManagementI;
 import fr.upmc.components.ComponentI;
 import fr.upmc.components.ports.AbstractOutboundPort;
 import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
+import fr.upmc.datacenter.hardware.processors.UnacceptableFrequencyException;
 
 public class CoreManagementOutboundPort
 extends AbstractOutboundPort
@@ -86,6 +87,20 @@ implements CoreManagementI
 	public int getCurrentFrequency(AllocatedCore core) throws Exception
 	{
 		return ((CoreManagementI) this.connector).getCurrentFrequency(core);
+	}
+
+	@Override
+	public void increaseFrequency(AllocatedCore core)
+			throws UnacceptableFrequencyException, Exception {
+		((CoreManagementI) this.connector).increaseFrequency(core);
+		
+	}
+	
+	@Override
+	public void decreaseFrequency(AllocatedCore core)
+			throws UnacceptableFrequencyException, Exception {
+		((CoreManagementI) this.connector).decreaseFrequency(core);
+		
 	}
 
 }

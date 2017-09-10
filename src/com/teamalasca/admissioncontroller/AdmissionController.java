@@ -270,7 +270,7 @@ implements AdmissionRequestHandlerI,
 		final String RDRequestNotificationOutboundPortURI = AbstractPort.generatePortURI();
 		final String RDDynamicStateDataInboundPortURI = AbstractPort.generatePortURI();
 
-		new RequestDispatcher(
+		RequestDispatcher rd = new RequestDispatcher(
 				RDURI,
 				RDManagementInboundPortURI,
 				RDRequestSubmissionInboundPortURI,
@@ -295,12 +295,12 @@ implements AdmissionRequestHandlerI,
 		// Active tracing and logging
 		if (isTracing()) {
 			ac.toggleTracing();
-			//rd.toggleTracing();
+			rd.toggleTracing();
 		}
 
 		if (isLogging()) {
 			ac.toggleLogging();
-			//rd.toggleLogging();
+			rd.toggleLogging();
 		}
 
 		// -------- Port URI's are shared through the request ------/

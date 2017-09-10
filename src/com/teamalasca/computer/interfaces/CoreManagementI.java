@@ -1,13 +1,14 @@
 package com.teamalasca.computer.interfaces;
 
 import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
+import fr.upmc.datacenter.hardware.processors.UnacceptableFrequencyException;
 
 
 /**
  * The interface <code>CoreManagementI</code> defines the services offered by
  * <code>Computer</code> components.
  * 
- * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clï¿½ment George</a>
  * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
  * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
  */
@@ -46,6 +47,24 @@ public interface CoreManagementI
 	 * @throws Exception throws an exception if an error occured..
 	 */
 	public void releaseCores(AllocatedCore[] cores) throws Exception;
+	
+	/**
+	 * Increase the frequency of the given core to the upper frequency
+	 * 
+	 * @param core the related core to change its frequency.
+	 * @throws UnacceptableFrequencyException if such operation isn't possible
+	 * @throws Exception throws an exception if an other error occured.
+	 */
+	public void increaseFrequency(AllocatedCore core) throws UnacceptableFrequencyException,Exception;
+	
+	/**
+	 * Increase the frequency of the given core to the upper frequency
+	 * 
+	 * @param core the related core to change its frequency.
+	 * @throws UnacceptableFrequencyException if such operation isn't possible
+	 * @throws Exception throws an exception if an other error occured.
+	 */
+	public void decreaseFrequency(AllocatedCore core) throws UnacceptableFrequencyException,Exception;
 	
 	/**
 	 * Change the frequency of a core.

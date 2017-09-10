@@ -10,7 +10,7 @@ import fr.upmc.components.ports.AbstractInboundPort;
  * The class <code>RequestDispatcherManagementInboundPort</code> implements the
  * inbound port offering the interface <code>RequestDispatcherManagementI</code>.
  * 
- * @author	<a href="mailto:clementyj.george@gmail.com">Clément George</a>
+ * @author	<a href="mailto:clementyj.george@gmail.com">Clï¿½ment George</a>
  * @author	<a href="mailto:med.amine006@gmail.com">Mohamed Amine Corchi</a>
  * @author  <a href="mailto:victor.nea@gmail.com">Victor Nea</a>
  */
@@ -56,14 +56,14 @@ implements RequestDispatcherManagementI
 	 * @see com.teamalasca.requestdispatcher.interfaces.RequestDispatcherManagementI#associateVirtualMachine(java.lang.String)
 	 */
 	@Override
-	public void associateVirtualMachine(final String virtualMachineRequestSubmissionInboundPortURI)
+	public void associateVirtualMachine(final String virtualMachineURI,final String virtualMachineRequestSubmissionInboundPortURI)
 			throws Exception {
 		final RequestDispatcher rd = (RequestDispatcher) this.owner;
 		this.owner.handleRequestAsync(
 					new ComponentI.ComponentService<Void>() {
 						@Override
 						public Void call() throws Exception {
-							rd.associateVirtualMachine(virtualMachineRequestSubmissionInboundPortURI);
+							rd.associateVirtualMachine(virtualMachineURI,virtualMachineRequestSubmissionInboundPortURI);
 							return null;
 						}
 					});		
@@ -74,30 +74,15 @@ implements RequestDispatcherManagementI
 	 * @see com.teamalasca.requestdispatcher.interfaces.RequestDispatcherManagementI#dissociateVirtualMachine(java.lang.String)
 	 */
 	@Override
-	public void dissociateVirtualMachine(final String virtualMachineRequestSubmissionInboundPortURI)
+	public void dissociateVirtualMachine(final String virtualMachineURI)
 			throws Exception {
 		final RequestDispatcher rd = (RequestDispatcher) this.owner;
 		this.owner.handleRequestAsync(
 					new ComponentI.ComponentService<Void>() {
 						@Override
 						public Void call() throws Exception {
-							rd.dissociateVirtualMachine(virtualMachineRequestSubmissionInboundPortURI);
+							rd.dissociateVirtualMachine(virtualMachineURI);
 							return null;
-						}
-					});
-	}
-	
-	/**
-	 * @see com.teamalasca.requestdispatcher.interfaces.RequestDispatcherManagementI#hasOnlyOneVirtualMachine()
-	 */
-	@Override
-	public boolean hasOnlyOneVirtualMachine() throws Exception {
-		final RequestDispatcher rd = (RequestDispatcher) this.owner;
-		return this.owner.handleRequestSync(
-					new ComponentI.ComponentService<Boolean>() {
-						@Override
-						public Boolean call() throws Exception {
-							return rd.hasOnlyOneVirtualMachine();
 						}
 					});
 	}
