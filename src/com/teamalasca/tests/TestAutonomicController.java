@@ -101,14 +101,15 @@ extends	AbstractCVM
 	{
 		AbstractComponent.configureLogging("", "", 0, '|');
 		//Processor.DEBUG = true;
+		//AbstractCVM.DEBUG = true;
 
 		// --------------------------------------------------------------------
 		// Create and deploy a computer component with its 16 processors and
 		// each with 8 cores.
 		// --------------------------------------------------------------------
 		String computerURI = "computer0";
-		int numberOfProcessors = 16;
-		int numberOfCores = 8;
+		int numberOfProcessors = 2;
+		int numberOfCores = 4;
 		Set<Integer> admissibleFrequencies = new HashSet<>();
 		admissibleFrequencies.add(1500);	// Cores can run at 1,5 GHz
 		admissibleFrequencies.add(3000);	// and at 3 GHz
@@ -242,9 +243,10 @@ extends	AbstractCVM
 	public void	testScenario() throws Exception
 	{
 		// wait a few seconds before lauching application
-		Thread.sleep(200L) ;
+		Thread.sleep(3000L) ;
 		// start the first application
 		this.app1.startApp();
+		System.out.println("Start Application 1");
 		// wait 5 seconds
 		Thread.sleep(15000L) ;
 		// start the second application

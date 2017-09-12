@@ -11,9 +11,6 @@ public class AllocatedVirtualMachine {
 	
 	/** URI of the machine, used as equality criterion */
 	private final String URI;
-
-	/** Application virtual machine request submission inbound port URI. */
-	private final String applicationVmRequestSubmissionInboundPortURI;
 	
 	/** List of the allocated cores. */
 	private final List<AllocatedCore> cores;
@@ -23,21 +20,10 @@ public class AllocatedVirtualMachine {
 	 * 
 	 * @param applicationVmRequestSubmissionInboundPortURI the application virtual machine request submission inbound port URI.
 	 */
-	public AllocatedVirtualMachine(String applicationVmURI,String applicationVmRequestSubmissionInboundPortURI)
+	public AllocatedVirtualMachine(String applicationVmURI)
 	{
-		this.applicationVmRequestSubmissionInboundPortURI = applicationVmRequestSubmissionInboundPortURI;
 		this.URI = applicationVmURI;
 		this.cores = new ArrayList<>();
-	}
-	
-	/**
-	 * Get the application virtual machine request submission inbound port URI.
-	 * 
-	 * @return the application virtual machine request submission inbound port URI.
-	 */
-	public String getApplicationVmRequestSubmissionInboundPortURI()
-	{
-		return this.applicationVmRequestSubmissionInboundPortURI;
 	}
 	
 	/**
@@ -120,6 +106,16 @@ public class AllocatedVirtualMachine {
 
 	public String getURI() {
 		return this.URI;
+	}
+	
+	@Override
+	public String toString() {
+		String s = "[";
+		for(AllocatedCore c:cores){
+			s += "O";
+		}
+		s += "]";
+		return s;
 	}
 
 }

@@ -1,10 +1,14 @@
 package com.teamalasca.autonomiccontroller;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.teamalasca.applicationvm.ApplicationVM;
+import com.teamalasca.applicationvm.connectors.ApplicationVMManagementConnector;
+import com.teamalasca.applicationvm.ports.ApplicationVMManagementOutboundPort;
 import com.teamalasca.autonomiccontroller.interfaces.AutonomicControllerNotificationI;
 import com.teamalasca.autonomiccontroller.interfaces.AutonomicControllerServicesI;
 import com.teamalasca.autonomiccontroller.ports.AutonomicControllerServicesInboundPort;
@@ -27,9 +31,6 @@ import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
 import fr.upmc.datacenter.hardware.computers.ports.ComputerDynamicStateDataOutboundPort;
 import fr.upmc.datacenter.hardware.processors.UnacceptableFrequencyException;
 import fr.upmc.datacenter.interfaces.ControlledDataRequiredI;
-import fr.upmc.datacenter.software.applicationvm.ApplicationVM;
-import fr.upmc.datacenter.software.applicationvm.connectors.ApplicationVMManagementConnector;
-import fr.upmc.datacenter.software.applicationvm.ports.ApplicationVMManagementOutboundPort;
 import fr.upmc.datacenter.software.connectors.RequestNotificationConnector;
 
 /**
@@ -45,23 +46,43 @@ extends AbstractComponent
 implements AutonomicControllerServicesI, AutonomicControllerNotificationI,
 RequestDispatcherStateDataConsumerI
 {
-	/** List of execution time (in milliseconds) averages from the request dispatcher to compute the moving average. */
-	private List<Double> requestExecutionAverages;
+	
+	//_____ CONSTANTS _______//
 
-	/** The "N" value to compute moving average. */
-	private final static int MAX_SIZE_AVERAGE_LIST = 3;
+	/**
+	 * For calculating the moving average, we use a variant based on 
+	 * an exponential filter.
+	 */
+	private final static double EXPONENTIAL_FILTER_ALPHA = 0.65;
 
 	/** Default core number per VM */
 	public final static int DEFAULT_CORE_NUMBER = 4;
 
-	/** The aimed time we want to reach */
-	private static final double AIMED_AVERAGE  = 1000D;
+	/** Minimum of core by machine */
+	public static final int MIN_CORE_BY_MACHINE = 1;
+
+	/** Maximum of core by machine */
+	public static final int MAX_CORE_BY_MACHINE = 4;
+
+	/** Minimum of machine for a application */
+	public static final int MIN_MACHINE_BY_APP = 1;
+
+	/** Maximum of core by machine */
+	public static final int MAX_MACHINE_BY_APP = 4;
+
+	/** The average time we want to reach */
+	private static final double AIMED_AVERAGE  = 1200D;
 
 	/** Do adaptation every 15 seconds. */
-	private static final int PERIODIC_INTERVAL_ADAPTATION = 15000;
+	private static final int PERIODIC_INTERVAL_ADAPTATION = 30000;
 
-	/** Push data from the request dispatcher every 5 seconds. */
-	private static final int PUSHING_INTERVAL_REQUEST_DISPATCHER = 5000;
+	/** Push data from the request dispatcher every seconds. */
+	private static final int PUSHING_INTERVAL_REQUEST_DISPATCHER = 2000;
+	
+	//_____ CLASS VARIABLES _______//
+	
+	/** We use a single variable to store the execution times average */
+	private double movingAverage = -1;
 
 	/** A private URI to identify this autonomic controller, for debug purpose. */
 	private final String URI;
@@ -89,7 +110,10 @@ RequestDispatcherStateDataConsumerI
 
 	/** Local information about the allocated resources */
 	private final AllocatedResources state;
-	
+
+	/** Map storing the virtual machines management ports, to add or release their cores */
+	private final Map<AllocatedVirtualMachine,ApplicationVMManagementOutboundPort> vmManagementPorts = new HashMap<>();
+
 	/** This list stores references to the machines in waiting to be destroyed */
 	private final List<AllocatedVirtualMachine> machinesToDestroy = new ArrayList<>();
 
@@ -133,7 +157,6 @@ RequestDispatcherStateDataConsumerI
 
 		this.URI = autonomicControllerURI;
 		this.requestDispatcherRequestNotificationInboundPortURI = requestDispatcherRequestNotificationInboundPortURI;
-		this.requestExecutionAverages = Collections.synchronizedList(new ArrayList<Double>());
 
 		// Create port to use the autonomic controller
 		this.addOfferedInterface(AutonomicControllerServicesI.class) ;
@@ -258,22 +281,21 @@ RequestDispatcherStateDataConsumerI
 			RequestDispatcherDynamicStateI currentDynamicState)
 					throws Exception
 	{
-		this.logMessage(this.toString() + "received a message from a request dispatcher: average=" + currentDynamicState.getRequestExecutionTimeAverage());
 
+		this.logMessage(this.toString() + " just received an average execution time : " + currentDynamicState.getRequestExecutionTimeAverage() + " ms/10^9instructions");
 		// data received from an unknown dispatcher
 		if (dispatcherURI != requestDispatcherURI) {
 			return;
 		}
-
-		synchronized (requestExecutionAverages) {
-			// Add received average to compute moving average later
-			requestExecutionAverages.add(currentDynamicState.getRequestExecutionTimeAverage());
-
-			// For moving average, we only need 3 values
-			while (requestExecutionAverages.size() > MAX_SIZE_AVERAGE_LIST) {
-				requestExecutionAverages.remove(0);
-			}
-		}		
+		
+		
+		if(movingAverage == -1){ // this case happens only once at the beginning of the execution
+			movingAverage = currentDynamicState.getRequestExecutionTimeAverage();
+		}
+		
+		else{
+			movingAverage = EXPONENTIAL_FILTER_ALPHA * currentDynamicState.getRequestExecutionTimeAverage() + ((1 - EXPONENTIAL_FILTER_ALPHA) * movingAverage);
+		}	
 	}
 
 	/**
@@ -305,8 +327,12 @@ RequestDispatcherStateDataConsumerI
 			appVMManagementOutboundPort.publishPort();
 			appVMManagementOutboundPort.doConnection(vmApplicationVMManagementInboundPortURI, ApplicationVMManagementConnector.class.getCanonicalName());
 
-			//Try to allocate cores to the new virtual machine
-			List<AllocatedCore> cores = this.allocateCores(appVMManagementOutboundPort, coreNumber);
+			//--- Create the view of allocated resources ---------/
+			AllocatedVirtualMachine virtualMachine = new AllocatedVirtualMachine(vmURI);
+			vmManagementPorts.put(virtualMachine, appVMManagementOutboundPort);
+
+			// Try to allocate cores to the new virtual machine
+			List<AllocatedCore> cores = this.allocateCores(virtualMachine, coreNumber);
 
 			if(cores == null){
 				return null; //return null if no core has been allocated.
@@ -318,12 +344,10 @@ RequestDispatcherStateDataConsumerI
 					this.requestDispatcherRequestNotificationInboundPortURI,
 					RequestNotificationConnector.class.getCanonicalName());
 
-			//--- Create the view of allocated resources ---------/
-			AllocatedVirtualMachine virtualMachine = new AllocatedVirtualMachine(vmURI,vmRequestSubmissionInboundPortURI);
-			virtualMachine.addCores(cores);
 			return virtualMachine;
 
 		}catch(Exception e){
+			e.printStackTrace();
 			return null;
 		}
 	}
@@ -336,21 +360,23 @@ RequestDispatcherStateDataConsumerI
 	 */
 	private void releaseVirtualMachine(final AllocatedVirtualMachine machine)
 	{
-		
+
 		// store the reference to the machine in a specific list
 		this.machinesToDestroy.add(machine);
-		
+
 		// dissociate vm from the request dispatcher,
 		// the request dispatcher will notify the autonomic controller when the virtual machine will end 
 		// executing its last requests, thus will be ready to be destroyed
 		try {
 			this.rdmop.dissociateVirtualMachine(machine.getURI());
+			ApplicationVMManagementOutboundPort managementPort = this.vmManagementPorts.remove(machine);
+			managementPort.dispose();
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			return;
 		}
 
-		
 		// clear the machine in the local information about allocated resources
 		this.state.removeVirtualMachine(machine);
 	}
@@ -362,7 +388,7 @@ RequestDispatcherStateDataConsumerI
 	private void freeResources(AllocatedVirtualMachine machine) {
 		List<AllocatedCore> cores = machine.getCores();
 		for(AllocatedCore core:cores){
-			this.releaseCore(core);
+			//this.releaseCore(core);
 		}
 	}
 
@@ -373,17 +399,23 @@ RequestDispatcherStateDataConsumerI
 	 * @param nbCores the number of cores to allocate.
 	 * @return null if an error occurred.
 	 */
-	private List<AllocatedCore> allocateCores(final ApplicationVMManagementOutboundPort AVMManagementOutboundPort, int nbCores)
+	private List<AllocatedCore> allocateCores(AllocatedVirtualMachine aMachine, int nbCores)
 	{
 		try{
+
+			ApplicationVMManagementOutboundPort aVMManagementPort = vmManagementPorts.get(aMachine);
+			if(aVMManagementPort == null)
+				return null;
+
 			// allocate its cores
-			AllocatedCore[] cores = this.cmop.allocateCores(DEFAULT_CORE_NUMBER);
-			AVMManagementOutboundPort.allocateCores(cores);
+			AllocatedCore[] cores = this.cmop.allocateCores(nbCores);
+			aVMManagementPort.allocateCores(cores);
 
 			List<AllocatedCore> res = new ArrayList<>();
 			for(AllocatedCore core:cores){
 				if(core != null){
 					res.add(core);
+					aMachine.addCore(core);
 				}
 			}
 			if(res.isEmpty())
@@ -397,42 +429,40 @@ RequestDispatcherStateDataConsumerI
 	}
 
 	/**
-	 * Release a core.
-	 * @param ac the allocated core to release.
+	 * Allocate 1 core.
+	 * 
+	 * @param AVMManagementOutboundPort the application virtual machine management outbound port.
+	 * @param nbCores the number of cores to allocate.
+	 * @return null if an error occurred.
 	 */
-	private void releaseCore(final AllocatedCore ac)
+	private AllocatedCore allocateCore(final AllocatedVirtualMachine aMachine)
 	{
-		// release core
-		try {
-			this.cmop.releaseCore(ac);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		List<AllocatedCore> cores = allocateCores(aMachine, 1);
+		if(cores == null || cores.isEmpty())
+			return null;
+		AllocatedCore allocatedCore = cores.get(0);
+		return allocatedCore;
 	}
 
 	/**
-	 * Compute the moving average.
-	 * 
-	 * @return the moving average.
+	 * Release a core from a virtual machine
+	 * @param ac the allocated core to release.
 	 */
-	public Long computeMovingAverage()
+	private void releaseCore(final AllocatedVirtualMachine aMachine)
 	{
-		synchronized (requestExecutionAverages) {
-			// Need to check if we at least got an average
-			if (requestExecutionAverages.isEmpty()) {
-				return null;
-			}
+		AllocatedCore core = aMachine.selectRandomCore();
+		ApplicationVMManagementOutboundPort managementPort = vmManagementPorts.get(aMachine);
+		if(managementPort == null)
+			return;
 
-			// Compute moving average
-			long result = 0L;
-			for (double i : requestExecutionAverages) {
-				result += i;
-			}
-			result = result / requestExecutionAverages.size();
-
-			logMessage(this.toString() + " Moving average = " + result);
-			return result;
+		// release core
+		try {
+			managementPort.releaseCore(core);
+			this.cmop.releaseCore(core);
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
+		aMachine.removeCore(core);
 	}
 
 	/**
@@ -444,53 +474,84 @@ RequestDispatcherStateDataConsumerI
 		this.scheduleTask(
 				new ComponentI.ComponentTask() {
 					@Override
-					public void run() {
+					public void run(){
+						
+						double average = AutonomicController.this.movingAverage;
+				
+						logMessage("Pondered average = " + average);
 
-						logMessage("state before adaptation: " + state.toString());
+						// Check this value it's not -1, it can happen at the beginning of the execution
+						if (average != -1) {
 
-						// Compute moving average
-						final Long movingAvg = computeMovingAverage();
+							logMessage("state before adaptation: " + state.toString());
+							if (average > AIMED_AVERAGE) { // We are above the THRESHOLD
 
-						// Check this value it's not null, it can happen at the beginning of the execution
-						if (movingAvg != null) {
+								int coreNeeded = (int) ((average * state.getTotalCoreNumber()) / AIMED_AVERAGE);
+								int coreByMachine = state.getBaseVM().getCoreNumber();
 
-							if (movingAvg > AIMED_AVERAGE) { // We are above the THRESHOLD
+								logMessage("estimated cores needed: " + coreNeeded);
 
-								int vmNeeded = (int) ((movingAvg * state.getVirtualMachineNumber()) / AIMED_AVERAGE);
-								System.out.println(String.format("movingAvg : %d, vmNeeded: %d", movingAvg,vmNeeded));
+								while(coreNeeded > 0){
 
-								if(vmNeeded > 0){ // add as much virtual machines as needed.
-									int i = 0;
-									for(;i<vmNeeded;i++){
-										AllocatedVirtualMachine avm = allocateVm(state.getBaseVM().getCoreNumber());
-										if(avm == null){
+									boolean statutquo = true;
+
+									for(int i = 0; i < state.getVirtualMachineNumber() && coreNeeded > 0; i++){
+										AllocatedVirtualMachine avm = state.getMachine(i);
+										if(avm.getCoreNumber() >= MAX_CORE_BY_MACHINE)
+											continue;
+										AllocatedCore core = allocateCore(avm);
+										if(core == null)
 											break;
-										}
-										state.addVirtualMachine(avm);
+										statutquo = false;
+										coreNeeded --;
 									}
-									logMessage(String.format("%s: %d virtual machines added",this.toString(), i));
+
+									if(coreNeeded > coreByMachine && state.getVirtualMachineNumber() < MAX_MACHINE_BY_APP){
+										AllocatedVirtualMachine avm = allocateVm(coreByMachine);
+										if(avm != null){
+											statutquo = false;
+											state.addVirtualMachine(avm);
+											coreNeeded -= coreByMachine;
+										}
+									}
+
+									if(statutquo)
+										break;
 								}
 							}
 							else {
 
-								int extraVms = (int) ((movingAvg * state.getVirtualMachineNumber()) / AIMED_AVERAGE);
-								System.out.println(String.format("movingAvg : %d, extraVms: %d", movingAvg,extraVms));
+								int extraCores = (int) ((average * state.getTotalCoreNumber()) / AIMED_AVERAGE);
+								int coreByMachine = state.getBaseVM().getCoreNumber();
 
-								if(extraVms > 0){
-									int i = 0;
-									for(;i<extraVms && state.getVirtualMachineNumber() > 0;i++){
-										AllocatedVirtualMachine avm = state.getLastVirtualMachine();
-										if(avm == null){
-											break;
-										}
-										releaseVirtualMachine(avm);
+								logMessage("estimated extra cores: " + extraCores);
+
+								while(extraCores > 0){
+
+									boolean statutquo = true;
+
+									for(int i = 0; i < state.getVirtualMachineNumber() && extraCores > 0; i++){
+										AllocatedVirtualMachine avm = state.getMachine(i);
+										if(avm.getCoreNumber() <= MIN_CORE_BY_MACHINE)
+											continue;
+										releaseCore(avm);
+										statutquo = false;
+										extraCores --;
 									}
-									logMessage(String.format("%s: %d virtual machines removed",this.toString(), i));
+
+									if(extraCores > coreByMachine && state.getVirtualMachineNumber() > MIN_MACHINE_BY_APP){
+										releaseVirtualMachine(state.getLastVirtualMachine());
+										statutquo = false;
+										extraCores =- coreByMachine;
+									}
+
+									if(statutquo)
+										break;
 								}
 							}
+							logMessage("state after adaptation:" + state.toString());
 						}
 
-						logMessage("state after adaptation:" + state.toString());
 						// Schedule another adaptation
 						doPeriodicAdaptation();
 
@@ -505,7 +566,7 @@ RequestDispatcherStateDataConsumerI
 	@Override
 	public String toString()
 	{
-		return "autonomic controller '" + this.URI + "'";
+		return "Autonomic Controller(" + this.URI + ")";
 	}
 
 	/**
@@ -557,9 +618,10 @@ RequestDispatcherStateDataConsumerI
 		for(AllocatedVirtualMachine machine:machinesToDestroy){
 			if(machine.equals(aVirtualMachineURI)){
 				freeResources(machine);
+				vmManagementPorts.remove(machine);
 			}
 		}	
-		
+
 	}
 
 }

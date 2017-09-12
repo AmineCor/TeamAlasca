@@ -295,12 +295,12 @@ implements AdmissionRequestHandlerI,
 		// Active tracing and logging
 		if (isTracing()) {
 			ac.toggleTracing();
-			rd.toggleTracing();
+			//rd.toggleTracing();
 		}
 
 		if (isLogging()) {
 			ac.toggleLogging();
-			rd.toggleLogging();
+			//rd.toggleLogging();
 		}
 
 		// -------- Port URI's are shared through the request ------/

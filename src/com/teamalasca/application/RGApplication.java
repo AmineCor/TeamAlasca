@@ -25,18 +25,21 @@ import fr.upmc.datacenterclient.requestgenerator.RequestGenerator;
 public class RGApplication
 extends AbstractComponent
 implements AdmissionNotificationHandlerI,
-		   RequestNotificationHandlerI
+RequestNotificationHandlerI
 {
 
-	/** Request generator for the application. */
+	/** Request generator for the application normal activity. */
 	private RequestGenerator rg;
-	
+
+	/** Second Request generator for the application pick activity. */
+	private RequestGenerator rg2;
+
 	/** Component URI. */
 	private String URI;
-	
+
 	/** Admission notification inbound port. */
 	private AdmissionNotificationInboundPort anibp;
-	
+
 	/** Admission request outbound port. */
 	private AdmissionRequestOutboundPort asop;
 
@@ -54,16 +57,25 @@ implements AdmissionNotificationHandlerI,
 		URI = uri;
 		rg = new RequestGenerator(
 				URI + "_rg",		// generator component URI
-				500.0,				// mean time between two requests
-				6000000000L,		// mean number of instructions in requests
+				500,				// mean time between two requests
+				600000000L,		// mean number of instructions in requests
 				URI + "_rg_mip",
 				URI + "_rg_rsobp",
 				URI + "_rg_rnibp"
-		);
+				);
 		
+		rg2 = new RequestGenerator(
+				URI + "_rg2",		// generator component URI
+				250,				// mean time between two requests
+				600000000L,		// mean number of instructions in requests
+				URI + "_rg2_mip",
+				URI + "_rg2_rsobp",
+				URI + "_rg2_rnibp"
+				);
+
 		//rg.toggleLogging();
 		//rg.toggleTracing();
-		
+
 		// connect ports
 		this.addOfferedInterface(AdmissionNotificationI.class);
 		this.anibp = new AdmissionNotificationInboundPort(URI + "_anibp", this) ;
@@ -87,9 +99,10 @@ implements AdmissionNotificationHandlerI,
 		AdmissionRequest request = new AdmissionRequest(this.URI, anibp.getPortURI());
 		this.asop.handleAdmissionRequestAndNotify(request);
 	}
-	
+
 	public void stopApp() throws Exception{
 		rg.stopGeneration();
+		this.shutdown();
 	}
 
 	/**
@@ -102,7 +115,7 @@ implements AdmissionNotificationHandlerI,
 	{
 		this.asop.doConnection(asibp, AdmissionRequestConnector.class.getCanonicalName());
 	}
-	
+
 	/** 
 	 * @see com.teamalasca.admissioncontroller.interfaces.AdmissionNotificationHandlerI#acceptAdmissionNotification(com.teamalasca.admissioncontroller.interfaces.AdmissionRequestI)
 	 */
@@ -112,10 +125,34 @@ implements AdmissionNotificationHandlerI,
 		if (request.isAccepted()) {
 			String rqURI = request.getRequestSubmissionInboundPortURI();
 			rg.findPortFromURI(URI + "_rg_rsobp").doConnection(rqURI, RequestSubmissionConnector.class.getCanonicalName());
+			rg2.findPortFromURI(URI + "_rg2_rsobp").doConnection(rqURI, RequestSubmissionConnector.class.getCanonicalName());
 			rg.startGeneration();
+
+			//let's make the second generator active every minute for 30 seconds
+
+			new Thread(new Runnable() {
+
+				@Override
+				public void run() {
+
+					while(!RGApplication.this.isShutdown()){
+						try{
+							Thread.sleep(60000);
+							rg2.startGeneration();
+							logMessage(RGApplication.this.toString() + " starts pike activity");
+							Thread.sleep(30000);
+							logMessage(RGApplication.this.toString() + " ends pike activity");
+							rg2.stopGeneration();
+						}catch(Exception e){
+							e.printStackTrace();
+						}
+					}
+
+				}
+			}).start();
 		}
 	}
-	
+
 	/** 
 	 * @see fr.upmc.datacenter.software.interfaces.RequestNotificationHandlerI#acceptRequestTerminationNotification(fr.upmc.datacenter.software.interfaces.RequestI)
 	 */

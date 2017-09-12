@@ -50,7 +50,7 @@ PushModeControllerI
 
 	/** A private URI to identify this request dispatcher, for debug purpose. */
 	private final String URI;
-	
+
 	private final Map<String, RequestSubmissionOutboundPort> rsops;
 
 	/** URIs of the virtual machines inbound ports allocated to this request dispatcher. */
@@ -125,11 +125,11 @@ PushModeControllerI
 		this.URI = requestDispatcherURI;
 
 		// for now, no vm is allocated to this request dispatcher
-		this.virtualMachinesURIs = new ArrayList<>();
+		this.virtualMachinesURIs = Collections.synchronizedList(new ArrayList<String>());
 
 		// and no outbound port is initialized
 		this.rsops = new HashMap<>();
-		
+
 		this.addRequiredInterface(RequestSubmissionI.class);
 
 		// whenever the other ports are initialized
@@ -240,8 +240,6 @@ PushModeControllerI
 			return;
 		}
 
-		this.virtualMachinesURIs.add(virtualMachineURI);
-
 		// creating a new outbound port for the VM
 		final String URI = AbstractPort.generatePortURI();
 		RequestSubmissionOutboundPort rsop = new RequestSubmissionOutboundPort(URI,this);
@@ -254,7 +252,9 @@ PushModeControllerI
 		// adding the port to our internal outbound port list
 		this.rsops.put(virtualMachineURI, rsop);
 
-		logMessage("a new virtual machine (submission input port:'"+ virtualMachineRequestSubmissionInboundPortURI + "') has been associated to " + this.toString());
+		// finally add the machine
+		this.virtualMachinesURIs.add(vmCursor,virtualMachineURI);
+
 	}
 
 	/**
@@ -266,15 +266,16 @@ PushModeControllerI
 		if (!this.virtualMachinesURIs.contains(virtualMachineURI)) {
 			return;
 		}
-		
-		RequestSubmissionOutboundPort outboundPort = rsops.get(virtualMachineURI);
-		
+
+		this.virtualMachinesURIs.remove(virtualMachineURI);
+
+		RequestSubmissionOutboundPort outboundPort = rsops.remove(virtualMachineURI);
+
 		if(outboundPort != null){
-				outboundPort.unpublishPort();
-				outboundPort.doDisconnection();
+			outboundPort.unpublishPort();
+			outboundPort.doDisconnection();
 		}
 
-		logMessage("virtual machine "+ virtualMachineURI + "') has been dissociated to " + this.toString());
 	}
 
 	/**
@@ -291,17 +292,27 @@ PushModeControllerI
 	@Override
 	public void acceptRequestSubmissionAndNotify(RequestI r) throws Exception
 	{
-		if (rsops.isEmpty()) {
+		if (virtualMachinesURIs.isEmpty()) {
 			throw new Exception("request '" + r.getRequestURI() + "' cant be handled because no vm is connected to the " + this.toString());
 		}
 
-		RequestSubmissionOutboundPort rsop;
+		String vm = null;
 
-		synchronized (vmCursor){ // select the next virtual machine and increment the cursor
-			String vm = virtualMachinesURIs.get(vmCursor);
-			vmCursor = (vmCursor + 1) % virtualMachinesURIs.size();
-			rsop = rsops.get(vm);
+		try{
+
+			synchronized (vmCursor){ // select the next virtual machine and increment the cursor
+				if(vmCursor >= virtualMachinesURIs.size())
+					vmCursor = 0;
+				vm = virtualMachinesURIs.get(vmCursor);
+				vmCursor = (vmCursor + 1) % virtualMachinesURIs.size();
+
+			}
+
+		}catch(Exception e){
+			e.printStackTrace();
 		}
+
+		RequestSubmissionOutboundPort rsop = rsops.get(vm);
 
 		if (!rsop.connected()) {
 			throw new Exception("port '" + rsop.getPortURI()+"' of " + this.toString() + " is disconnected, that should not happen");
@@ -309,6 +320,7 @@ PushModeControllerI
 
 		requestExecutionStartingTimes.put(r.getRequestURI(), System.currentTimeMillis());
 		// Send request to VM
+
 		rsop.submitRequestAndNotify(r);
 		logMessage("request '" + r.getRequestURI() + "' submitted to " + this.toString());
 
@@ -329,7 +341,6 @@ PushModeControllerI
 		else{
 			this.executionTimeAveragesHistory[executionTimeAveragesHistoryCursor] = ((double)requestExecutionTime) / weight;
 		}
-		System.out.println(this.executionTimeAveragesHistory[executionTimeAveragesHistoryCursor]);
 		executionTimeAveragesHistoryCursor = (executionTimeAveragesHistoryCursor + 1) % executionTimeAveragesHistory.length;
 		rnop.notifyRequestTermination(r);
 	}

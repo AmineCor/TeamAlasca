@@ -36,6 +36,13 @@ public final class AllocatedResources {
 		return vms.size();
 	}
 	
+	public int getTotalCoreNumber(){
+		int count = 0;
+		for(AllocatedVirtualMachine machine:vms)
+			count += machine.getCoreNumber();
+		return count;
+	}
+	
 	public final AllocatedVirtualMachine getBaseVM(){
 		return this.baseVm;
 	}
@@ -50,7 +57,14 @@ public final class AllocatedResources {
 	
 	@Override
 	public String toString() {
-		return this.getVirtualMachineNumber() + " virtual machines";
+		StringBuilder builder = new StringBuilder();
+		builder.append(this.getVirtualMachineNumber() + " virtual machines for a total of " + this.getTotalCoreNumber() + " cores.\n");
+		builder.append("--------------------------------------------\n");
+		for(AllocatedVirtualMachine machine:vms){
+			builder.append(machine.toString());
+		}
+		builder.append("\n--------------------------------------------");
+		return builder.toString();
 	}
 
 	public AllocatedVirtualMachine getVirtualMachine(String virtualMachineURI) {
@@ -60,6 +74,10 @@ public final class AllocatedResources {
 			}
 		}
 		return null;
+	}
+
+	public AllocatedVirtualMachine getMachine(int i) {
+		return vms.get(i);
 	}
 	
 
